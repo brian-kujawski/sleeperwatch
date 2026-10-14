@@ -100,6 +100,7 @@ select { font: inherit; color: var(--ink); background: var(--surface); border: 1
 .tip .row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .tip .row b { font-variant-numeric: tabular-nums; min-width: 52px; }
 .tip .row .key { width: 12px; height: 2px; border-radius: 1px; flex: none; }
+svg.mark-key, .chart svg.mark-key { display: inline-block; width: 24px; height: 10px; vertical-align: middle; margin-right: 6px; flex: none; overflow: visible; }
 .tip .row span { color: var(--ink-2); }
 .table-wrap { overflow: auto; max-height: 460px; border-bottom: 1px solid var(--grid); }
 thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
@@ -158,7 +159,7 @@ td .key { display: inline-block; width: 12px; height: 2px; border-radius: 1px; v
       <p class="note" id="table-note">Ranked by average price across all checks. Select a departure to see how its price moved.</p>
       <div class="table-wrap"><table>
         <thead><tr>
-          <th class="num">#</th><th>Travel date</th><th>Train</th><th>Departs</th>
+          <th class="num">#</th><th>Travel date</th><th>Train</th><th>Room</th><th>Departs</th>
           <th class="num">Average</th><th class="num">Latest</th><th class="num">Low</th><th class="num">High</th>
           <th class="num">Checks</th><th class="num">Last checked</th>
         </tr></thead>
@@ -217,15 +218,22 @@ function refreshFilterOptions() {
   const all = DATA.departures;
   fillSelect(F.route, [...new Set(all.map(d => d.route))].sort());
   const r = all.filter(d => d.route === F.route.value);
-  const rooms = [...new Set(r.map(d => d.room))].sort((a, b) => a === "Roomette" ? -1 : b === "Roomette" ? 1 : a.localeCompare(b));
-  fillSelect(F.room, rooms);
-  const rr = r.filter(d => d.room === F.room.value);
+  const rooms = [...new Set(r.map(d => d.room))].sort(roomOrder);
+  fillSelect(F.room, rooms.length > 1 ? [...rooms, ANY] : rooms, v => v === ANY ? "Any" : v);
+  const rr = r.filter(d => roomMatches(d));
   fillSelect(F.pax, [...new Set(rr.map(d => d.pax))].sort((a, b) => a - b), v => v == 1 ? "1 traveler" : `${v} travelers`);
 }
 
+const ANY = "*";
+const roomOrder = (a, b) => (a === "Roomette" ? -1 : b === "Roomette" ? 1 : a.localeCompare(b));
+const roomMatches = d => F.room.value === ANY || d.room === F.room.value;
+// Room type is drawn by line style, so a train keeps its colour across rooms:
+// Roomette solid with filled dots, every other room dashed with hollow dots.
+const isPrimaryRoom = room => room === "Roomette";
+
 function current() {
   return DATA.departures.filter(d =>
-    d.route === F.route.value && d.room === F.room.value && String(d.pax) === F.pax.value &&
+    d.route === F.route.value && roomMatches(d) && String(d.pax) === F.pax.value &&
     (F.past.checked || d.date >= todayStr));
 }
 
@@ -288,9 +296,20 @@ function showTip(tip, container, px, py, build) {
   let left = px + 14; if (left + tw > cw) left = px - tw - 14;
   tip.style.left = Math.max(0, left) + "px"; tip.style.top = Math.max(0, py - 10) + "px";
 }
-function tipRow(tip, color, value, label) {
+// A miniature of the mark: the line (solid or dashed) with its dot
+// (filled or hollow), so legend, tooltip and table keys match the chart.
+function lineKey(color, room) {
+  const primary = isPrimaryRoom(room);
+  const svg = el("svg", { width: 24, height: 10, viewBox: "0 0 24 10", class: "mark-key", "aria-hidden": "true" });
+  const line = el("line", { x1: 1, x2: 23, y1: 5, y2: 5, stroke: color, "stroke-width": 2, "stroke-linecap": "round" }, svg);
+  if (!primary) line.setAttribute("stroke-dasharray", "4 3");
+  el("circle", { cx: 12, cy: 5, r: 3.5, fill: primary ? color : cssVar("--surface"),
+                 stroke: primary ? cssVar("--surface") : color, "stroke-width": primary ? 1.5 : 2 }, svg);
+  return svg;
+}
+function tipRow(tip, color, value, label, room) {
   const r = document.createElement("div"); r.className = "row";
-  const k = document.createElement("i"); k.className = "key"; k.style.background = color;
+  const k = lineKey(color, room);
   const b = document.createElement("b"); b.textContent = value;
   const s = document.createElement("span"); s.textContent = label;
   r.append(k, b, s); tip.appendChild(r);
@@ -301,8 +320,12 @@ function drawDateChart(deps, m, metricName) {
   const box = $("chart"), tip = $("tip");
   tip.style.display = "none";
   const series = {};
-  for (const d of deps) (series[d.train] ??= { train: d.train, label: d.label, pts: [] }).pts.push(d);
-  const list = Object.values(series).sort((a, b) => trains.indexOf(a.train) - trains.indexOf(b.train));
+  const anyRoom = F.room.value === ANY;
+  for (const d of deps)
+    (series[d.train + "|" + d.room] ??= { train: d.train, room: d.room,
+      label: anyRoom ? `${d.label} · ${d.room}` : d.label, pts: [] }).pts.push(d);
+  const list = Object.values(series).sort((a, b) =>
+    (trains.indexOf(a.train) - trains.indexOf(b.train)) || roomOrder(a.room, b.room));
   list.forEach(s => s.pts.sort((a, b) => a.date.localeCompare(b.date)));
 
   $("chart-note").textContent = deps.length
@@ -311,8 +334,7 @@ function drawDateChart(deps, m, metricName) {
   const legend = $("legend"); legend.replaceChildren();
   if (list.length > 1) for (const s of list) {
     const item = document.createElement("span");
-    const k = document.createElement("i"); k.className = "key"; k.style.background = colorOf(s.train);
-    item.append(k, s.label); legend.appendChild(item);
+    item.append(lineKey(colorOf(s.train), s.room), s.label); legend.appendChild(item);
   }
   const W = Math.max(box.clientWidth, 320), H = 300, M = { l: 56, r: 16, t: 12, b: 32 };
   const svg = frame(box, W, H, M);
@@ -340,12 +362,19 @@ function drawDateChart(deps, m, metricName) {
 
   const cross = el("line", { y1: M.t, y2: H - M.b, stroke: cssVar("--axis"), "stroke-width": 1, visibility: "hidden" }, svg);
   for (const s of list) {
-    const c = colorOf(s.train);
-    if (s.pts.length > 1)
-      el("path", { d: s.pts.map((p, i) => `${i ? "L" : "M"}${x(p.date)},${y(p[m])}`).join(""), fill: "none",
+    const c = colorOf(s.train), primary = isPrimaryRoom(s.room);
+    if (s.pts.length > 1) {
+      const line = el("path", { d: s.pts.map((p, i) => `${i ? "L" : "M"}${x(p.date)},${y(p[m])}`).join(""), fill: "none",
                    stroke: c, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
-    for (const p of s.pts)
-      el("circle", { cx: x(p.date), cy: y(p[m]), r: 4, fill: c, stroke: cssVar("--surface"), "stroke-width": 2 }, svg);
+      if (!primary) line.setAttribute("stroke-dasharray", "6 4");
+    }
+    for (const p of s.pts) {
+      if (primary) el("circle", { cx: x(p.date), cy: y(p[m]), r: 4, fill: c, stroke: cssVar("--surface"), "stroke-width": 2 }, svg);
+      else {   // hollow marker, with the usual surface ring behind it
+        el("circle", { cx: x(p.date), cy: y(p[m]), r: 5.5, fill: cssVar("--surface") }, svg);
+        el("circle", { cx: x(p.date), cy: y(p[m]), r: 4, fill: cssVar("--surface"), stroke: c, "stroke-width": 2 }, svg);
+      }
+    }
   }
 
   // Crosshair snaps to the nearest travel date; tooltip lists every train that day.
@@ -357,7 +386,8 @@ function drawDateChart(deps, m, metricName) {
     const here = deps.filter(d => d.date === date).sort((a, b) => a[m] - b[m]);
     showTip(tip, box, x(date) * (r.width / W), ev.clientY - box.getBoundingClientRect().top, t => {
       const h = document.createElement("div"); h.className = "head"; h.textContent = fmtDay(date); t.appendChild(h);
-      for (const d of here) tipRow(t, colorOf(d.train), money(d[m]), `${d.label} · ${d.n} check${d.n > 1 ? "s" : ""}`);
+      for (const d of here) tipRow(t, colorOf(d.train), money(d[m]),
+        `${d.label}${anyRoom ? " · " + d.room : ""} · ${d.n} check${d.n > 1 ? "s" : ""}`, d.room);
     });
   };
   hit.addEventListener("pointermove", move);
@@ -379,15 +409,14 @@ function drawTable(deps) {
     const tr = document.createElement("tr");
     tr.tabIndex = 0; tr.setAttribute("aria-selected", keyOf(d) === selectedKey ? "true" : "false");
     const cells = [
-      [String(i + 1), "num rank"], [fmtDay(d.date), ""], [null, ""], [d.depart, ""],
+      [String(i + 1), "num rank"], [fmtDay(d.date), ""], [null, ""], [d.room, ""], [d.depart, ""],
       [money(d.avg), "num"], [money(d.latest), "num"], [money(d.low), "num"], [money(d.high), "num"],
       [String(d.n), "num"], [d.obs[d.obs.length - 1][1] != null ? `${Math.round(d.obs[d.obs.length - 1][1])} days out` : "", "num"],
     ];
     for (const [text, cls] of cells) {
       const td = document.createElement("td"); if (cls) td.className = cls;
       if (text === null) {
-        const k = document.createElement("i"); k.className = "key"; k.style.background = colorOf(d.train);
-        td.append(k, d.label);
+        td.append(lineKey(colorOf(d.train), d.room), d.label);
       } else td.textContent = text;
       tr.appendChild(td);
     }
@@ -428,7 +457,10 @@ function drawDetail(d) {
   }
   const c = colorOf(d.train);
   const path = pts.map((p, i) => i ? `H${x(p.x)}V${y(p.p)}` : `M${x(p.x)},${y(p.p)}`).join("");
-  if (pts.length > 1) el("path", { d: path, fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+  if (pts.length > 1) {
+    const line = el("path", { d: path, fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+    if (!isPrimaryRoom(d.room)) line.setAttribute("stroke-dasharray", "6 4");
+  }
   for (const p of pts) el("circle", { cx: x(p.x), cy: y(p.p), r: 4, fill: c, stroke: cssVar("--surface"), "stroke-width": 2 }, svg);
   const last = pts[pts.length - 1];
   const lab = el("text", { x: x(last.x) + 8, y: y(last.p) - 8, "text-anchor": x(last.x) > W - 80 ? "end" : "start" }, svg);
@@ -444,7 +476,7 @@ function drawDetail(d) {
     showTip(tip, box, x(p.x) * (r.width / W), ev.clientY - box.getBoundingClientRect().top, t => {
       const h = document.createElement("div"); h.className = "head";
       h.textContent = `${p.x.toFixed(1)} days out · checked ${p.at.slice(0, 16).replace("T", " ")} UTC`; t.appendChild(h);
-      tipRow(t, c, money(p.p), p.left != null ? `${p.left} left` : "");
+      tipRow(t, c, money(p.p), p.left != null ? `${p.left} left` : "", d.room);
     });
   });
   hit.addEventListener("pointerleave", () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); });

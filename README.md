@@ -130,7 +130,8 @@ as an `other-*.json` file in the captures folder.
 4. `sleeperwatch report`: latest, lowest and highest price per train, room and fare.
    `sleeperwatch dashboard` builds an interactive page from the database and
    opens it in your browser: the cheapest departure, price by travel date with
-   one line per train, every departure ranked by average price, and each
+   one line per train (Room → Any shows every room type: Roomettes solid,
+   Bedrooms dashed), every departure ranked by average price, and each
    departure's price history when you select it. It's a single offline HTML
    file in the data folder; re-run the command after a `fetch` to refresh it.
 5. `sleeperwatch plot`: one PNG per train and date, showing price against days before departure.
