@@ -71,7 +71,7 @@ def cmd_fetch(args):
     saved = 0
     try:
         with amtrak.BrowserSession(p["profile"], headless=args.headless, channel=args.channel,
-                                   executable=args.browser) as s:
+                                   executable=args.browser, reset_profile=args.reset_profile) as s:
             print("Warming up browser session...")
             s.warm_up()
             for w, d in jobs:
@@ -99,7 +99,8 @@ def cmd_fetch(args):
 
 def cmd_discover(args):
     p = _paths(args)
-    amtrak.discover(p["profile"], p["captures"], channel=args.channel, executable=args.browser)
+    amtrak.discover(p["profile"], p["captures"], channel=args.channel, executable=args.browser,
+                    reset_profile=args.reset_profile)
 
 
 REPORT_SQL = """
@@ -277,6 +278,8 @@ CHANNEL_HELP = ("which installed browser to prefer: chrome (default; falls back 
                 "if Chrome isn't installed), msedge, or chromium (Playwright's bundled browser, "
                 "launched in automation mode; Amtrak blocks it more often)")
 BROWSER_HELP = "path to a specific Chrome/Chromium/Edge executable to use"
+RESET_HELP = ("start from a fresh browser profile. Use after 403s: Amtrak's bot check "
+              "remembers a flagged session in its cookies and keeps blocking it")
 
 
 def main(argv=None):
@@ -298,12 +301,14 @@ def main(argv=None):
     f.add_argument("--headless", action="store_true", help="hide the browser (more likely to be blocked)")
     f.add_argument("--channel", default="chrome", choices=["chrome", "msedge", "chromium"], help=CHANNEL_HELP)
     f.add_argument("--browser", metavar="PATH", help=BROWSER_HELP)
+    f.add_argument("--reset-profile", action="store_true", help=RESET_HELP)
     f.add_argument("--dry-run", action="store_true", help="list what would be checked")
     f.set_defaults(func=cmd_fetch)
 
     d = sub.add_parser("discover", help="capture a hand-made search for inspection")
     d.add_argument("--channel", default="chrome", choices=["chrome", "msedge", "chromium"], help=CHANNEL_HELP)
     d.add_argument("--browser", metavar="PATH", help=BROWSER_HELP)
+    d.add_argument("--reset-profile", action="store_true", help=RESET_HELP)
     d.set_defaults(func=cmd_discover)
 
     r = sub.add_parser("report", help="latest/low/high per train, room and fare")

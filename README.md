@@ -83,9 +83,13 @@ The request format is known, but the exact field Amtrak uses for room type
 sleeperwatch discover
 ```
 
-A browser window opens on Amtrak's search page. Search for one of your
-sleeper routes by hand. Each search is saved to the `captures` folder, and
-the terminal prints the trains it parsed plus one raw room-fare entry. If
+A browser window opens on Amtrak's home page. Search for one of your
+sleeper routes by hand. For each search, sleeperwatch records the request
+Amtrak's page sent and checks its shape against what `fetch` sends. It then
+replays the request from inside the page, the same way `fetch` does,
+because the page navigates away before the original response can be read.
+The result goes in the `captures` folder, and the terminal prints the trains
+it parsed plus one raw room-fare entry. If
 the room names show up (e.g. `Roomette Value $480`), you're set. If they're
 blank, find the field holding the room name in the sample entry, add it to
 `_accommodation_name()` in `sleeperwatch/amtrak.py`, and run
@@ -121,7 +125,12 @@ private profile, attaches to it, loads amtrak.com to clear the bot check,
 and runs each search from inside that page. The profile keeps the cookies
 between runs.
 
-If `discover` or `fetch` reports 403s anyway, first check that a search
+**After a 403, reset the profile.** Once Akamai flags a session, it
+remembers through cookies in the browser profile, and every later run stays
+blocked even if nothing else is wrong. Run `sleeperwatch discover --reset-profile`
+(or `fetch --reset-profile`) to start clean.
+
+If 403s continue after a reset, first check that a search
 works in your everyday browser on the same network. If it fails there too,
 the block is on your IP or Amtrak is having trouble, not sleeperwatch.
 

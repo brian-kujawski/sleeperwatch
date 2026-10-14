@@ -215,17 +215,17 @@ def is_sleeper(fare: Fare) -> bool:
 
 
 _FETCH_JS = """
-async ({endpoint, payload, traceId, timeoutMs}) => {
+async ({endpoint, payload, traceId, timeoutMs, extraHeaders}) => {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
         const r = await fetch(endpoint, {
             method: 'POST', signal: ctl.signal,
-            headers: {
+            headers: Object.assign({
                 'Content-Type': 'application/json',
                 'Accept': 'application/json, text/plain, */*',
                 'x-amtrak-trace-id': traceId,
-            },
+            }, extraHeaders || {}),
             body: JSON.stringify(payload),
         });
         return {status: r.status, body: await r.text()};
@@ -256,8 +256,9 @@ class BrowserSession:
 
     def __init__(self, profile_dir: Path, headless: bool = False,
                  channel: str | None = "chrome", executable: str | None = None,
-                 log: Callable[[str], None] = print):
+                 reset_profile: bool = False, log: Callable[[str], None] = print):
         self.profile_dir = Path(profile_dir)
+        self.reset_profile = reset_profile
         self.headless = headless
         self.channel = channel or "chrome"
         self.executable = executable
@@ -304,6 +305,7 @@ class BrowserSession:
         profile = browsers.profile_dir_for(exe, self.profile_dir)
         if profile != self.profile_dir:
             self.log(f"  sandboxed browser detected; using profile at {profile}")
+        self._maybe_reset(profile)
         self.log(f"  starting {exe}")
         self._proc, endpoint = browsers.start_with_debug_port(exe, profile, headless=self.headless)
         try:
@@ -313,7 +315,17 @@ class BrowserSession:
             raise
         self._ctx = self._browser.contexts[0] if self._browser.contexts else self._browser.new_context()
 
+    def _maybe_reset(self, profile: Path) -> None:
+        """Delete the browser profile. Akamai's cookies remember a session it
+        has flagged, so after a block every later run is blocked too until
+        the profile is cleared."""
+        if self.reset_profile and profile.exists():
+            import shutil
+            shutil.rmtree(profile)
+            self.log(f"  cleared browser profile {profile}")
+
     def _launch_bundled(self) -> None:
+        self._maybe_reset(self.profile_dir)
         self.profile_dir.mkdir(parents=True, exist_ok=True)
         self._ctx = self._pw.chromium.launch_persistent_context(
             user_data_dir=str(self.profile_dir),
@@ -401,17 +413,24 @@ class BrowserSession:
 
     # -- search -------------------------------------------------------------
 
+    def post_raw(self, payload: dict, extra_headers: dict | None = None) -> dict:
+        """POST a payload to the fare endpoint from inside the page.
+        Returns {status, body, error?}; body is the response text."""
+        return self.page.evaluate(_FETCH_JS, {
+            "endpoint": ENDPOINT,
+            "payload": payload,
+            "traceId": trace_id(),
+            "timeoutMs": 45_000,
+            "extraHeaders": extra_headers or {},
+        })
+
     def search_raw(self, origin: str, destination: str, date: str,
                    passengers: int = 1, attempts: int = 3) -> dict:
         """Return the raw JSON response for one origin/destination/date."""
         last = "no attempt"
+        payload = build_payload(origin, destination, date, passengers)
         for attempt in range(attempts):
-            res = self.page.evaluate(_FETCH_JS, {
-                "endpoint": ENDPOINT,
-                "payload": build_payload(origin, destination, date, passengers),
-                "traceId": trace_id(),
-                "timeoutMs": 45_000,
-            })
+            res = self.post_raw(payload)
             if res["status"] == 200:
                 body = json.loads(res["body"])
                 errors = body.get("errors") or []
@@ -420,6 +439,8 @@ class BrowserSession:
                     raise BlockedError(msg)
                 return body
             last = res.get("error") or f"HTTP {res['status']}"
+            if res["status"] == 403:
+                last += " (bot check; if this persists, retry with --reset-profile)"
             self.log(f"    attempt {attempt + 1}/{attempts} failed: {last} (clearance: {self.clearance()})")
             if attempt + 1 < attempts:
                 self.page.wait_for_timeout(4000)
@@ -430,39 +451,124 @@ class BrowserSession:
         raise BlockedError(f"search failed: {last}")
 
 
+# Request headers the browser manages itself; never copied into a replay.
+_BROWSER_HEADERS = {
+    "accept-encoding", "connection", "content-length", "cookie", "host", "origin",
+    "referer", "user-agent", "x-amtrak-trace-id",
+}
+
+
+def _replay_headers(headers: dict) -> dict:
+    return {k: v for k, v in (headers or {}).items()
+            if k.lower() not in _BROWSER_HEADERS and not k.lower().startswith(("sec-", ":"))}
+
+
+def _key_paths(obj, prefix="") -> set[str]:
+    """Structural keys of a JSON value (list items collapsed to [])."""
+    out = set()
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            path = f"{prefix}.{k}" if prefix else k
+            out.add(path)
+            out |= _key_paths(v, path)
+    elif isinstance(obj, list):
+        for v in obj:
+            out |= _key_paths(v, prefix + "[]")
+    return out
+
+
+def compare_payload(captured: dict) -> list[str]:
+    """Differences in *shape* between the site's own request and ours."""
+    try:
+        leg = captured["journeyRequest"]["journeyLegRequests"][0]
+        ours = build_payload(
+            leg["origin"]["code"], leg["destination"]["code"],
+            leg["origin"]["schedule"]["departureDateTime"][:10], len(leg.get("passengers") or [1]))
+    except (KeyError, IndexError, TypeError):
+        return ["could not read origin/destination/date from the captured request"]
+    theirs_k, ours_k = _key_paths(captured), _key_paths(ours)
+    return ([f"site sends, we don't: {k}" for k in sorted(theirs_k - ours_k)] +
+            [f"we send, site doesn't: {k}" for k in sorted(ours_k - theirs_k)])
+
+
 def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
-             executable: str | None = None) -> None:
-    """Open a visible browser, let the user search by hand, and save every
-    journey-solution-option request/response so the payload and the sleeper
-    response structure can be inspected."""
+             executable: str | None = None, reset_profile: bool = False) -> None:
+    """Open a visible browser, let the user search by hand, and save each
+    journey-solution-option request with its response.
+
+    Amtrak's page fires the search from the home page and then navigates to
+    the results page, which makes the browser drop the response body before
+    it can be read. So the request (which survives) is recorded as sent and
+    then replayed from inside the page, the same way `fetch` works, to get
+    the response. That also checks the fetch path against the live site.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    with BrowserSession(profile_dir, headless=False, channel=channel, executable=executable) as s:
-        count = {"n": 0}
+    with BrowserSession(profile_dir, headless=False, channel=channel, executable=executable,
+                        reset_profile=reset_profile) as s:
+        pending: list[dict] = []
+        # Our own replays hit the same endpoint; remember them so they
+        # aren't captured and replayed again in an endless loop.
+        own_replays: list[str] = []
+
+        def canon(body) -> str:
+            return json.dumps(body, sort_keys=True) if isinstance(body, (dict, list)) else str(body)
 
         def on_response(resp):
-            if ENDPOINT not in resp.url:
+            # Keep this handler cheap and failure-proof; real work happens in
+            # the main loop once the page has settled.
+            if ENDPOINT not in resp.url or resp.request.method != "POST":
                 return
-            count["n"] += 1
+            item = {"url": resp.url, "status": resp.status,
+                    "request_headers": dict(resp.request.headers), "request_body": None,
+                    "response": None, "response_source": None}
+            try:
+                item["request_body"] = resp.request.post_data_json
+            except Exception:
+                item["request_body"] = resp.request.post_data
+            key = canon(item["request_body"])
+            if key in own_replays:
+                own_replays.remove(key)
+                return
+            # Deliberately not reading resp.body() here: Amtrak navigates away
+            # right after this response, and reading the body then either
+            # errors or hangs forever. The main loop replays the request.
+            pending.append(item)
+
+        def process(item: dict) -> None:
             stamp = time.strftime("%Y%m%d-%H%M%S")
-            try:
-                req_body = resp.request.post_data_json
-            except Exception:
-                req_body = resp.request.post_data
-            try:
-                body = resp.json()
-            except Exception:
-                body = {"_text": resp.text()[:5000]}
-            path = out_dir / f"capture-{stamp}-{count['n']}.json"
-            path.write_text(json.dumps({
-                "url": resp.url, "status": resp.status,
-                "request_headers": resp.request.headers,
-                "request_body": req_body, "response": body,
-            }, indent=2), encoding="utf-8")
-            print(f"  saved {path} (HTTP {resp.status})")
-            if resp.status == 403:
-                print(f"  -> blocked by Amtrak's bot detection (session clearance: {s.clearance()}).")
-            if isinstance(body, dict):
-                summarize_accommodations(body)
+            print(f"\n  site's search: HTTP {item['status']}")
+            if item["status"] == 403:
+                print("  -> blocked by Amtrak's bot detection. Close the window and rerun with "
+                      "`sleeperwatch discover --reset-profile`.")
+            req = item["request_body"]
+            if isinstance(req, dict):
+                diffs = compare_payload(req)
+                print("  request shape matches build_payload()" if not diffs
+                      else "  request shape differs from build_payload():\n    " + "\n    ".join(diffs))
+            if isinstance(req, dict) and item["status"] == 200:
+                try:
+                    s.page.wait_for_load_state("domcontentloaded", timeout=15_000)
+                except Exception:
+                    pass
+                own_replays.append(canon(req))
+                res = s.post_raw(req, _replay_headers(item["request_headers"]))
+                item["replay_status"] = res["status"]
+                print(f"  replayed from inside the page: HTTP {res['status']}"
+                      + (f" ({res.get('error')})" if res.get("error") else ""))
+                try:
+                    item["response"] = json.loads(res["body"])
+                    item["response_source"] = "replayed"
+                except (ValueError, TypeError):
+                    item["response"] = {"_text": (res.get("body") or "")[:5000]}
+            path = out_dir / f"capture-{stamp}.json"
+            n = 1
+            while path.exists():
+                n += 1
+                path = out_dir / f"capture-{stamp}-{n}.json"
+            path.write_text(json.dumps(item, indent=2), encoding="utf-8")
+            print(f"  saved {path}")
+            if isinstance(item["response"], dict) and "data" in item["response"]:
+                summarize_accommodations(item["response"])
 
         # Listen on the whole browser, not one tab, in case results open elsewhere.
         s._ctx.on("response", on_response)
@@ -475,10 +581,18 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
         try:
             while s.alive():
                 s.page.wait_for_timeout(500)
+                while pending:
+                    try:
+                        process(pending.pop(0))
+                    except Exception as e:
+                        print(f"  could not process a capture: {e}")
         except KeyboardInterrupt:
             print("\nStopped.")
-        except Exception:
-            pass
+        except Exception as e:
+            # Closing the window surfaces as a "target closed" error; that's
+            # the normal way to finish, so only report anything else.
+            if "closed" not in str(e).lower():
+                print(f"  (discover stopped: {e.__class__.__name__}: {str(e).splitlines()[0][:150]})")
 
 
 def summarize_accommodations(body: dict) -> None:
