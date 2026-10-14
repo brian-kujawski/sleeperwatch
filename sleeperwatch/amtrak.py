@@ -283,7 +283,13 @@ class BrowserSession:
             self._ctx = self._pw.chromium.launch_persistent_context(channel=self.channel, **kwargs)
         except Exception as e:  # Chrome not installed -> bundled Chromium
             if self.channel:
-                self.log(f"  could not launch channel {self.channel!r} ({e.__class__.__name__}); using bundled Chromium")
+                # Playwright's first message line names the path it looked for.
+                reason = next((ln.strip() for ln in str(e).splitlines() if ln.strip()), e.__class__.__name__)
+                reason = reason.removeprefix("BrowserType.launch_persistent_context:").strip()
+                self.log(f"  could not launch {self.channel!r}: {reason[:200]}")
+                self.log(f"  using bundled Chromium instead. To use {self.channel} (fewer bot blocks), install it "
+                         f"(`python -m playwright install {self.channel}`); "
+                         f"to silence this, pass --channel chromium.")
                 self._ctx = self._pw.chromium.launch_persistent_context(**kwargs)
             else:
                 raise
