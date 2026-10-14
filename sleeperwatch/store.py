@@ -17,7 +17,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .amtrak import TrainOption, is_sleeper, parse
+from .amtrak import TrainOption, adhoc_fares, is_sleeper, parse
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -149,20 +149,25 @@ def save_response(db, run_id: int, watch: dict, travel_date: str, raw: dict,
         (run_id, observed_at, watch["name"], watch["from"], watch["to"], travel_date,
          watch["passengers"], gzip.compress(json.dumps(raw).encode())))
     response_id = cur.lastrowid
-    n = _insert_observations(db, response_id, observed_at, watch, travel_date, parse(raw))
+    n = _insert_observations(db, response_id, observed_at, watch, travel_date, raw)
     db.commit()
     return n
 
 
-def _insert_observations(db, response_id, observed_at, watch, travel_date,
-                         options: list[TrainOption]) -> int:
+def _insert_observations(db, response_id, observed_at, watch, travel_date, raw: dict) -> int:
+    """Rows for one stored search: its own fares, plus room prices fetched
+    separately for rooms the search left unpriced (Bedrooms), stored under
+    ADHOC_KEY in the same raw body."""
+    options: list[TrainOption] = parse(raw)
+    extra = adhoc_fares(raw)
     from .config import keep_fare, keep_train  # avoid import cycle
 
     rows, avail_rows = [], []
     for opt in options:
         if not keep_train(watch, opt):
             continue
-        for f in opt.fares:
+        priced_here = {f.accommodation for f in opt.fares}
+        for f in opt.fares + [x for x in extra.get(opt.train_number, []) if x.accommodation not in priced_here]:
             if not keep_fare(watch, f):
                 continue
             rows.append((
@@ -204,6 +209,6 @@ def reparse(db, watches_by_name: dict[str, dict]) -> int:
                      passengers=r["passengers"])
         watch.setdefault("only_sleepers", True)
         raw = json.loads(gzip.decompress(r["body_gz"]))
-        total += _insert_observations(db, r["id"], r["observed_at"], watch, r["travel_date"], parse(raw))
+        total += _insert_observations(db, r["id"], r["observed_at"], watch, r["travel_date"], raw)
     db.commit()
     return total

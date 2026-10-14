@@ -79,7 +79,21 @@ def cmd_fetch(args):
                 label = f"{w['name']} {d}"
                 try:
                     if key not in cache:
-                        cache[key] = s.search_raw(*key)
+                        raw = s.search_raw(*key)
+                        # Watches sharing this search decide which unpriced rooms to price.
+                        sharing = [x for x, xd in jobs
+                                   if xd == d and (x["from"], x["to"], xd, x["passengers"]) == key
+                                   and x.get("price_rooms", True)]
+                        if sharing:
+                            def want(train, room, sharing=sharing):
+                                return any(config.keep_train_number(x, train) and config.keep_room(x, room)
+                                           for x in sharing)
+                            entries = s.price_rooms(raw, amtrak.build_payload(*key), want=want)
+                            raw[amtrak.ADHOC_KEY] = entries
+                            for e in entries:
+                                if e.get("error"):
+                                    print(f"        {e['room']} on #{e['train_number']}: {e['error']}")
+                        cache[key] = raw
                         time.sleep(random.uniform(2.0, 4.5))  # be polite
                     n = store.save_response(db, run_id, w, d, cache[key])
                     saved += n

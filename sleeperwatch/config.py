@@ -16,6 +16,7 @@ DEFAULTS = {
     "trains": [],            # train numbers to keep; empty = all trains on the pair
     "accommodations": [],    # e.g. ["Roomette"]; substring match; empty = all
     "fare_families": [],     # e.g. ["VLU", "FLX"]; empty = all
+    "price_rooms": True,     # also price rooms the search leaves unpriced (Bedrooms); 1 request each
 }
 
 
@@ -65,6 +66,16 @@ def keep_train(w: dict, opt: TrainOption) -> bool:
         return True
     numbers = set(opt.train_number.split("+"))
     return bool(numbers & set(w["trains"]))
+
+
+def keep_room(w: dict, room: str) -> bool:
+    """Whether a room type (e.g. "Bedroom") passes the watch's accommodations filter."""
+    wanted = w.get("accommodations") or []
+    return not wanted or any(a.lower() in room.lower() for a in wanted)
+
+
+def keep_train_number(w: dict, train_number: str) -> bool:
+    return not w.get("trains") or bool(set(train_number.split("+")) & set(w["trains"]))
 
 
 def keep_fare(w: dict, f: Fare) -> bool:

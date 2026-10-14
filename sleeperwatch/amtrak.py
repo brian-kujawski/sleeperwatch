@@ -215,6 +215,152 @@ def parse(raw: dict) -> list[TrainOption]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Pricing rooms the search leaves unpriced (Bedrooms)
+# ---------------------------------------------------------------------------
+#
+# The search prices only the cheapest room. When you pick a Bedroom on the
+# site, it POSTs to ENDPOINT + "/adhoc-fare" with a body built from the
+# search response: its cacheId, the itinerary's logicalId/schedule, the
+# per-search travel-leg ids, and the room's product code (rbd). Shape below
+# copied from a live capture (2026-10-14); the leg ids change every search,
+# so the body must be built from the search response it follows.
+
+ADHOC_ENDPOINT = ENDPOINT + "/adhoc-fare"
+ADHOC_KEY = "_sleeperwatch_adhoc"   # where fetch stores room-price responses in a raw search body
+
+
+@dataclass
+class UnpricedRoom:
+    train_number: str
+    room: str
+    request: dict
+
+
+def adhoc_requests(raw: dict, search_payload: dict) -> list[UnpricedRoom]:
+    """One adhoc-fare request per (single-train itinerary, unpriced room).
+
+    Connecting itineraries are skipped: the site's request for those hasn't
+    been captured, so its shape is unknown."""
+    data = raw.get("data") or {}
+    cache_id = (data.get("journeyRequest") or {}).get("cacheId")
+    legs = ((data.get("journeySolutionOption") or {}).get("journeyLegs") or [])
+    if not cache_id or not legs:
+        return []
+    try:
+        req_passengers = search_payload["journeyRequest"]["journeyLegRequests"][0]["passengers"]
+    except (KeyError, IndexError, TypeError):
+        req_passengers = [{"id": "P1", "initialType": "adult"}]
+    passengers = [{"id": p.get("id", f"P{i + 1}"), "ageGroup": p.get("initialType", "adult"),
+                   "initialType": "F", "type": "F"} for i, p in enumerate(req_passengers)]
+
+    out: list[UnpricedRoom] = []
+    for opt in legs[0].get("journeyLegOptions") or []:
+        travel_legs = opt.get("travelLegs") or []
+        if opt.get("isCancelled") or len(travel_legs) != 1:
+            continue
+        tl = travel_legs[0]
+        number = str((tl.get("travelService") or {}).get("number") or "?")
+        seen: set[str] = set()
+        for accom in opt.get("reservableAccommodations") or []:
+            for tla in accom.get("travelLegAccommodations") or []:
+                for extra in tla.get("additionalProducts") or []:
+                    name = (extra.get("name") or "").strip()
+                    if not name or name in seen or _money(extra.get("additionalProductFare"), "total"):
+                        continue
+                    seen.add(name)
+
+                    def place(p):
+                        p = p or {}
+                        return {"schedule": dict(p.get("schedule") or {}),
+                                "code": p.get("code"), "name": p.get("name")}
+                    body = {
+                        "cacheId": cache_id,
+                        "fare": {"pricingUnit": "DOLLARS"},
+                        "journeyLegOption": {
+                            "adhocPricingType": "mixedAccommodation",
+                            "destination": place(opt.get("destination")),
+                            "logicalId": opt.get("logicalId"),
+                            "origin": place(opt.get("origin")),
+                            "reservableAccommodations": [{
+                                "accommodationFare": {"pricingUnit": "DOLLARS"},
+                                "category": accom.get("category") or "RG",
+                                "travelLegAccommodations": [{
+                                    "passengers": passengers,
+                                    "reservableProduct": {
+                                        "count": 1,
+                                        "rbd": extra.get("rbd"),
+                                        "name": name,
+                                        "rbdType": extra.get("rbdType") or accom.get("travelClass"),
+                                        "subClass": accom.get("fareFamily") or "NA",
+                                    },
+                                    "travelLegId": tla.get("travelLegId") or tl.get("id"),
+                                }],
+                            }],
+                            "travelLegs": [{"id": tl.get("id"), "travelService": {"number": number}}],
+                        },
+                    }
+                    # The site sends destination.schedule with only arrivalDateTime
+                    # and origin.schedule with only departureDateTime.
+                    body["journeyLegOption"]["destination"]["schedule"] = {
+                        "arrivalDateTime": (opt.get("destination") or {}).get("schedule", {}).get("arrivalDateTime")}
+                    body["journeyLegOption"]["origin"]["schedule"] = {
+                        "departureDateTime": (opt.get("origin") or {}).get("schedule", {}).get("departureDateTime")}
+                    out.append(UnpricedRoom(number, name, body))
+    return out
+
+
+def fares_in(obj: Any) -> list[Fare]:
+    """Every priced accommodation anywhere in a response.
+
+    Used for adhoc-fare responses, whose shape hasn't been seen yet; it looks
+    for the same accommodationFare / travelLegAccommodations structure the
+    search response uses, wherever it appears."""
+    found: list[Fare] = []
+
+    def walk(o):
+        if isinstance(o, dict):
+            if "accommodationFare" in o and "travelLegAccommodations" in o:
+                price = _money(o.get("accommodationFare"), "total")
+                if price and price > 0:
+                    prod = _main_product(o)
+                    if not prod:
+                        for tla in o.get("travelLegAccommodations") or []:
+                            prod = tla.get("selectedProduct") or {}
+                            if prod:
+                                break
+                    inv = prod.get("availableInventory")
+                    code = o.get("fareFamily") or "NA"
+                    found.append(Fare(
+                        travel_class=o.get("travelClass") or prod.get("rbdType") or "Unknown",
+                        accommodation=(prod.get("name") or "").strip(),
+                        fare_family=FARE_FAMILIES.get(code, code), family_code=code, price=price,
+                        seats_left=inv if isinstance(inv, int) else None,
+                        rail=_money(o.get("accommodationFare"), "rail"),
+                        accommodation_charge=_money(o.get("accommodationFare"), "accommodation"),
+                    ))
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    walk(obj)
+    return found
+
+
+def adhoc_fares(raw: dict) -> dict[str, list[Fare]]:
+    """Train number -> room fares from the adhoc responses fetch stored in a
+    raw search body (only the room that was asked about is kept)."""
+    out: dict[str, list[Fare]] = {}
+    for entry in raw.get(ADHOC_KEY) or []:
+        wanted = (entry.get("room") or "").lower()
+        fares = [f for f in fares_in(entry.get("response")) if f.accommodation.lower() == wanted]
+        if fares:
+            out.setdefault(str(entry.get("train_number")), []).extend(fares[:1])
+    return out
+
+
 def is_sleeper(fare: Fare) -> bool:
     text = f"{fare.travel_class} {fare.accommodation}".lower()
     return any(w in text for w in ("sleeper", "roomette", "bedroom"))
@@ -431,11 +577,12 @@ class BrowserSession:
 
     # -- search -------------------------------------------------------------
 
-    def post_raw(self, payload: dict, extra_headers: dict | None = None) -> dict:
-        """POST a payload to the fare endpoint from inside the page.
+    def post_raw(self, payload: dict, extra_headers: dict | None = None,
+                 endpoint: str = ENDPOINT) -> dict:
+        """POST a payload to an Amtrak endpoint from inside the page.
         Returns {status, body, error?}; body is the response text."""
         return self.page.evaluate(_FETCH_JS, {
-            "endpoint": ENDPOINT,
+            "endpoint": endpoint,
             "payload": payload,
             "traceId": trace_id(),
             "timeoutMs": 45_000,
@@ -467,6 +614,30 @@ class BrowserSession:
                 except Exception:
                     pass
         raise BlockedError(f"search failed: {last}")
+
+    def price_rooms(self, raw: dict, payload: dict, want=lambda train, room: True,
+                    gap_ms: int = 2000) -> list[dict]:
+        """Ask Amtrak for the price of each room the search left unpriced
+        (Bedrooms), for the trains/rooms `want` accepts. Returns entries to
+        store under ADHOC_KEY in the raw search body. Failures are recorded
+        in the entry rather than raised, so one bad room doesn't lose the
+        whole search."""
+        entries = []
+        for r in adhoc_requests(raw, payload):
+            if not want(r.train_number, r.room):
+                continue
+            self.page.wait_for_timeout(gap_ms)  # be polite between requests
+            res = self.post_raw(r.request, endpoint=ADHOC_ENDPOINT)
+            entry = {"train_number": r.train_number, "room": r.room, "status": res["status"]}
+            try:
+                entry["response"] = json.loads(res["body"])
+            except (ValueError, TypeError):
+                entry["response"] = None
+                entry["error"] = res.get("error") or (res.get("body") or "")[:300]
+            if isinstance(entry["response"], dict) and entry["response"].get("errors"):
+                entry["error"] = entry["response"]["errors"][0].get("sysMessage")
+            entries.append(entry)
+        return entries
 
 
 # Request headers the browser manages itself; never copied into a replay.
@@ -509,15 +680,6 @@ def compare_payload(captured: dict) -> list[str]:
             [f"we send, site doesn't: {k}" for k in sorted(ours_k - theirs_k)])
 
 
-# Flags Amtrak echoes back as false in every response's journeyRequest; they
-# look like switches for pricing every room type. `discover --probe-rooms`
-# tries each to find out.
-ROOM_PROBES = {
-    "priceAllRBD": {"priceAllRBD": True},
-    "additionalAccoms": {"additionalAccoms": True},
-}
-
-
 def priced_rooms(raw: dict) -> dict[str, list[str]]:
     """Train number -> priced sleeper products, e.g. {'49': ['Roomette $826']}."""
     out: dict[str, list[str]] = {}
@@ -528,63 +690,101 @@ def priced_rooms(raw: dict) -> dict[str, list[str]]:
     return out
 
 
+def _path(url: str) -> str:
+    from urllib.parse import urlparse
+    return urlparse(url).path.rstrip("/")
+
+
 def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
              executable: str | None = None, reset_profile: bool = False,
              probe_rooms: bool = False) -> None:
-    """Open a visible browser, let the user search by hand, and save each
-    journey-solution-option request with its response.
+    """Open a visible browser, let the user search by hand, and save what
+    Amtrak's fare endpoints were asked and answered.
 
-    Amtrak's page fires the search from the home page and then navigates to
-    the results page, which makes the browser drop the response body before
-    it can be read. So the request (which survives) is recorded as sent and
-    then replayed from inside the page, the same way `fetch` works, to get
-    the response. That also checks the fetch path against the live site.
+    Amtrak's page fires its requests and then navigates or re-renders, which
+    makes the browser drop response bodies before they can be read. So each
+    request (which survives) is recorded as sent and then replayed from
+    inside the page to its own endpoint, the same way `fetch` works.
+
+    With probe_rooms, each search is followed by sleeperwatch's own
+    adhoc-fare requests for the rooms the search left unpriced (Bedrooms),
+    exactly as `fetch` will send them.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
+    fare_paths = {ENDPOINT, ADHOC_ENDPOINT}
     with BrowserSession(profile_dir, headless=False, channel=channel, executable=executable,
                         reset_profile=reset_profile) as s:
         pending: list[dict] = []
         other_calls: list[dict] = []
-        # Our own replays hit the same endpoint; remember them so they
+        # Our own replays hit the same endpoints; remember them so they
         # aren't captured and replayed again in an endless loop.
         own_replays: list[str] = []
 
         def canon(body) -> str:
             return json.dumps(body, sort_keys=True) if isinstance(body, (dict, list)) else str(body)
 
+        def request_body(resp):
+            try:
+                return resp.request.post_data_json
+            except Exception:
+                return resp.request.post_data
+
         def on_response(resp):
             # Keep this handler cheap and failure-proof; real work happens in
-            # the main loop once the page has settled.
-            if resp.request.method == "POST" and "/dotcom/" in resp.url and ENDPOINT not in resp.url:
-                # Some other Amtrak API call (e.g. when picking a room type).
-                # Record the request so we can learn what it does.
-                try:
-                    body = resp.request.post_data_json
-                except Exception:
-                    body = resp.request.post_data
+            # the main loop once the page has settled. Deliberately no
+            # resp.body(): after Amtrak's navigation it errors or hangs.
+            if resp.request.method != "POST" or "/dotcom/" not in resp.url:
+                return
+            body = request_body(resp)
+            if _path(resp.url) not in fare_paths:
+                # Some other Amtrak API call (cart, ancillaries, ...). Record
+                # the request so we can learn what it does.
                 other_calls.append({"url": resp.url, "status": resp.status,
                                     "request_headers": dict(resp.request.headers), "request_body": body})
                 return
-            if ENDPOINT not in resp.url or resp.request.method != "POST":
-                return
-            item = {"url": resp.url, "status": resp.status,
-                    "request_headers": dict(resp.request.headers), "request_body": None,
-                    "response": None, "response_source": None}
-            try:
-                item["request_body"] = resp.request.post_data_json
-            except Exception:
-                item["request_body"] = resp.request.post_data
-            key = canon(item["request_body"])
+            key = canon(body)
             if key in own_replays:
                 own_replays.remove(key)
                 return
-            # Deliberately not reading resp.body() here: Amtrak navigates away
-            # right after this response, and reading the body then either
-            # errors or hangs forever. The main loop replays the request.
-            pending.append(item)
+            pending.append({"url": resp.url, "endpoint": _path(resp.url), "status": resp.status,
+                            "request_headers": dict(resp.request.headers), "request_body": body,
+                            "response": None, "response_source": None})
 
-        def process(item: dict) -> None:
+        def replay(item: dict) -> None:
+            try:
+                s.page.wait_for_load_state("domcontentloaded", timeout=15_000)
+            except Exception:
+                pass
+            own_replays.append(canon(item["request_body"]))
+            res = s.post_raw(item["request_body"], _replay_headers(item["request_headers"]),
+                             endpoint=item["endpoint"])
+            item["replay_status"] = res["status"]
+            print(f"  replayed from inside the page: HTTP {res['status']}"
+                  + (f" ({res.get('error')})" if res.get("error") else ""))
+            try:
+                item["response"] = json.loads(res["body"])
+                item["response_source"] = "replayed"
+            except (ValueError, TypeError):
+                item["response"] = {"_text": (res.get("body") or "")[:5000]}
+
+        def report_errors(body) -> bool:
+            errs = body.get("errors") if isinstance(body, dict) else None
+            for err in errs or []:
+                print(f"  Amtrak returned an error: {err.get('sysMessage') or err.get('businessMessage') or err}")
+            return bool(errs)
+
+        def save(item: dict, prefix: str) -> Path:
             stamp = time.strftime("%Y%m%d-%H%M%S")
+            path = out_dir / f"{prefix}-{stamp}.json"
+            n = 1
+            while path.exists():
+                n += 1
+                path = out_dir / f"{prefix}-{stamp}-{n}.json"
+            path.write_text(json.dumps(item, indent=2), encoding="utf-8")
+            print(f"  saved {path}")
+            return path
+
+        def process_search(item: dict) -> None:
             print(f"\n  site's search: HTTP {item['status']}")
             if item["status"] == 403:
                 print("  -> blocked by Amtrak's bot detection. Close the window and rerun with "
@@ -595,56 +795,43 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
                 print("  request shape matches build_payload()" if not diffs
                       else "  request shape differs from build_payload():\n    " + "\n    ".join(diffs))
             if isinstance(req, dict) and item["status"] == 200:
-                try:
-                    s.page.wait_for_load_state("domcontentloaded", timeout=15_000)
-                except Exception:
-                    pass
-                own_replays.append(canon(req))
-                res = s.post_raw(req, _replay_headers(item["request_headers"]))
-                item["replay_status"] = res["status"]
-                print(f"  replayed from inside the page: HTTP {res['status']}"
-                      + (f" ({res.get('error')})" if res.get("error") else ""))
-                try:
-                    item["response"] = json.loads(res["body"])
-                    item["response_source"] = "replayed"
-                except (ValueError, TypeError):
-                    item["response"] = {"_text": (res.get("body") or "")[:5000]}
-            if probe_rooms and isinstance(req, dict) and isinstance(item.get("response"), dict) \
-                    and "data" in item["response"]:
-                base = priced_rooms(item["response"])
-                item["probes"] = {}
-                print("  probing for more room prices:")
-                for label, flags in ROOM_PROBES.items():
-                    variant = json.loads(json.dumps(req))
-                    variant.setdefault("journeyRequest", {}).update(flags)
-                    own_replays.append(canon(variant))
-                    s.page.wait_for_timeout(1500)  # polite gap between requests
-                    res = s.post_raw(variant, _replay_headers(item["request_headers"]))
-                    try:
-                        body = json.loads(res["body"])
-                    except (ValueError, TypeError):
-                        body = {"_text": (res.get("body") or "")[:2000]}
-                    item["probes"][label] = {"status": res["status"], "response": body}
-                    if isinstance(body, dict) and body.get("errors"):
-                        print(f"    {label}: Amtrak error: {body['errors'][0].get('sysMessage')}")
-                        continue
-                    found = priced_rooms(body) if isinstance(body, dict) else {}
-                    more = {t: r for t, r in found.items() if r != base.get(t)}
-                    print(f"    {label}: " + ("no change" if not more else
-                          "; ".join(f"#{t}: {', '.join(r)}" for t, r in more.items())))
-            path = out_dir / f"capture-{stamp}.json"
-            n = 1
-            while path.exists():
-                n += 1
-                path = out_dir / f"capture-{stamp}-{n}.json"
-            path.write_text(json.dumps(item, indent=2), encoding="utf-8")
-            print(f"  saved {path}")
-            resp_body = item["response"]
-            if isinstance(resp_body, dict):
-                for err in resp_body.get("errors") or []:
-                    print(f"  Amtrak returned an error: {err.get('sysMessage') or err.get('businessMessage') or err}")
-                if "data" in resp_body:
-                    summarize_accommodations(resp_body)
+                replay(item)
+            body = item["response"]
+            if probe_rooms and isinstance(req, dict) and isinstance(body, dict) and "data" in body:
+                print("  pricing rooms the search left unpriced:")
+                for r in adhoc_requests(body, req):   # don't recapture our own requests
+                    own_replays.append(canon(r.request))
+                entries = s.price_rooms(body, req)
+                for e in entries:
+                    fares = [f for f in fares_in(e.get("response")) if f.accommodation.lower() == e["room"].lower()]
+                    if fares:
+                        f = fares[0]
+                        print(f"    #{e['train_number']} {e['room']}: ${f.price:.0f} "
+                              f"(rail {f.rail or 0:.0f} + room {f.accommodation_charge or 0:.0f}, "
+                              f"{f.seats_left} left)  HTTP {e['status']}")
+                    else:
+                        print(f"    #{e['train_number']} {e['room']}: no price found (HTTP {e['status']})"
+                              + (f": {e['error']}" if e.get("error") else
+                                 "; response saved, shape not recognised yet"))
+                if not entries:
+                    print("    (none: no single-train itinerary listed an unpriced room)")
+                body[ADHOC_KEY] = entries
+            save(item, "capture")
+            if not report_errors(body) and isinstance(body, dict) and "data" in body:
+                summarize_accommodations(body)
+
+        def process_adhoc(item: dict) -> None:
+            req = item["request_body"] if isinstance(item["request_body"], dict) else {}
+            prod = (((req.get("journeyLegOption") or {}).get("reservableAccommodations") or [{}])[0]
+                    .get("travelLegAccommodations") or [{}])[0].get("reservableProduct") or {}
+            print(f"\n  site priced a room ({prod.get('name') or '?'}): HTTP {item['status']}")
+            if req and item["status"] == 200:
+                replay(item)
+            save(item, "adhoc")
+            if not report_errors(item["response"]):
+                for f in fares_in(item["response"]):
+                    print(f"    {f.travel_class} {f.accommodation} ${f.price:.0f} "
+                          f"(rail {f.rail or 0:.0f} + room {f.accommodation_charge or 0:.0f}, {f.seats_left} left)")
 
         # Listen on the whole browser, not one tab, in case results open elsewhere.
         s._ctx.on("response", on_response)
@@ -658,16 +845,15 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
             while s.alive():
                 s.page.wait_for_timeout(500)
                 while pending:
+                    item = pending.pop(0)
                     try:
-                        process(pending.pop(0))
+                        (process_adhoc if item["endpoint"] == ADHOC_ENDPOINT else process_search)(item)
                     except Exception as e:
                         print(f"  could not process a capture: {e}")
                 while other_calls:
                     call = other_calls.pop(0)
-                    path = out_dir / f"other-{time.strftime('%Y%m%d-%H%M%S')}-{len(list(out_dir.glob('other-*')))+1}.json"
-                    path.write_text(json.dumps(call, indent=2), encoding="utf-8")
-                    print(f"\n  other Amtrak API call: {call['url'].split('amtrak.com')[-1]} "
-                          f"(HTTP {call['status']}) -> {path.name}")
+                    print(f"\n  other Amtrak API call: {_path(call['url'])} (HTTP {call['status']})")
+                    save(call, "other")
         except KeyboardInterrupt:
             print("\nStopped.")
         except Exception as e:

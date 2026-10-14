@@ -151,7 +151,42 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
 
     test_paths()
     test_real_capture()
+    test_room_pricing()
     print("all offline tests passed")
+
+
+def test_room_pricing():
+    """Bedroom pricing: request builder pinned to the site's own request,
+    price extraction checked on Amtrak's real priced-accommodation shape."""
+    import json
+    fx = Path(__file__).parent / "fixtures"
+    cap = json.loads((fx / "nyp-chi-2026-11-14-bedroom.json").read_text(encoding="utf-8"))
+    reqs = amtrak.adhoc_requests(cap["response"], cap["request_body"])
+    # Connecting itineraries are skipped; the Lake Shore's Bedroom is priced.
+    assert [(r.train_number, r.room) for r in reqs] == [("49", "Bedroom")], reqs
+    built = json.dumps(reqs[0].request).replace("92e76cfe_2026-11-14T15:40:00", "aac70922_2026-11-14T15:40:00")
+    assert json.loads(built) == cap["site_adhoc_request"], "adhoc request no longer matches the site's"
+
+    # The cart request carries a real priced sleeper selection; the extractor must read it.
+    cart = json.loads((fx / "cart-roomette.json").read_text(encoding="utf-8"))
+    fares = amtrak.fares_in(cart)
+    assert [(f.accommodation, f.price, f.rail, f.accommodation_charge, f.seats_left) for f in fares] \
+        == [("Roomette", 930.0, 218.0, 712.0, 7)], fares
+
+    # Stored adhoc responses become observation rows (here shaped like the cart's).
+    bedroom_resp = json.loads(json.dumps(cart).replace('"Roomette"', '"Bedroom"').replace('"930.00"', '"1489.00"'))
+    raw = dict(cap["response"])
+    raw[amtrak.ADHOC_KEY] = [{"train_number": "49", "room": "Bedroom", "status": 200, "response": bedroom_resp}]
+    w = {"name": "t", "from": "NYP", "to": "CHI", "passengers": 1, "trains": ["49"],
+         "only_sleepers": True, "accommodations": [], "fare_families": []}
+    with tempfile.TemporaryDirectory() as tmp:
+        db = store.connect(Path(tmp) / "f.db")
+        run = store.start_run(db)
+        assert store.save_response(db, run, w, "2026-11-14", raw) == 2
+        got = {r[0]: r[1] for r in db.execute("SELECT accommodation, price FROM observations")}
+        assert got == {"Roomette": 930.0, "Bedroom": 1489.0}, got
+        assert store.reparse(db, {"t": w}) == 2   # survives a rebuild from the raw body
+        db.close()
 
 
 def test_real_capture():

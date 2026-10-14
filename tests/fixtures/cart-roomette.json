@@ -1,0 +1,247 @@
+{
+ "customerId": "ANONYMOUS",
+ "journeyRequest": [
+  {
+   "customer": {
+    "tierStatus": "Member"
+   },
+   "fare": {
+    "pricingUnit": "DOLLARS"
+   },
+   "journeyLegRequests": [
+    {
+     "destination": {
+      "code": "CHI",
+      "schedule": {
+       "arrivalDateTime": "NA"
+      }
+     },
+     "origin": {
+      "code": "NYP",
+      "schedule": {
+       "departureDateTime": "2026-11-14T00:00:00"
+      }
+     },
+     "passengers": [
+      {
+       "id": "P1",
+       "type": "F",
+       "initialType": "adult"
+      }
+     ]
+    }
+   ],
+   "type": "One-Way",
+   "isPassRider": false,
+   "additionalAccoms": false,
+   "tripTags": false,
+   "alternateDayOption": false,
+   "includeTrainsCloseToDeparture": false,
+   "priceAllRBD": false,
+   "cascadesWSDOTFilter": false,
+   "singleAdultFare": true,
+   "segmentPrice": false,
+   "includeRestricted": false,
+   "includeDeparted": false,
+   "cacheId": "cacheId-OW-AAC-false-Member-DOLLARS-NYP-CHI-2026-11-14T00:00:00-SAF-true-segmentPrice-false-1-F"
+  }
+ ],
+ "journeySolution": {
+  "id": "a44d2bd7-1290-4a5c-9957-d1844b490824",
+  "action": "NN",
+  "journeyLegs": [
+   {
+    "id": "journeyLeg-1",
+    "selectedJourneyLegOption": {
+     "destination": {
+      "schedule": {
+       "arrivalDateTime": "2026-11-15T10:12:00"
+      },
+      "code": "CHI",
+      "name": "Chicago, IL"
+     },
+     "singleAdultFare": false,
+     "id": "1_2026-11-14T15:40:00_2077b76a",
+     "isBorderCross": false,
+     "logicalId": "49_NYP-1S",
+     "origin": {
+      "schedule": {
+       "departureDateTime": "2026-11-14T15:40:00"
+      },
+      "code": "NYP",
+      "name": "New York, NY"
+     },
+     "selectedAccommodations": [
+      {
+       "accommodationFare": {
+        "dollarsAmount": {
+         "accommodation": "712.00",
+         "rail": "218.00",
+         "total": "930.00"
+        },
+        "pricingUnit": "DOLLARS"
+       },
+       "isAdditionalProduct": false,
+       "travelLegAccommodations": [
+        {
+         "additionalProducts": [
+          {
+           "additionalProductFare": {
+            "dollarsAmount": {
+             "accommodation": "0.00",
+             "rail": "0.00",
+             "total": "0.00"
+            }
+           },
+           "passengers": [
+            {
+             "passengerFare": {
+              "dollarsAmount": {
+               "accommodation": "0.00",
+               "rail": "0.00",
+               "total": "0.00"
+              },
+              "pricingUnit": "DOLLARS"
+             },
+             "id": "P1",
+             "initialType": "F",
+             "isDiscounted": false,
+             "isModified": false,
+             "type": "F",
+             "ageGroup": "adult"
+            }
+           ],
+           "availableInventory": 3,
+           "capacity": 2,
+           "code": "1016",
+           "count": 1,
+           "lowAvailabilityThreshold": 4,
+           "maxAllowedCount": 1,
+           "name": "Bedroom",
+           "rbd": "DS",
+           "rbdType": "Sleeper",
+           "seatAssignRBD": false
+          }
+         ],
+         "passengers": [
+          {
+           "passengerFare": {
+            "dollarsAmount": {
+             "accommodation": "712.00",
+             "rail": "218.00",
+             "total": "930.00"
+            },
+            "pricingUnit": "DOLLARS"
+           },
+           "id": "P1",
+           "initialType": "F",
+           "isDiscounted": false,
+           "isModified": false,
+           "type": "F",
+           "ageGroup": "adult"
+          }
+         ],
+         "travelLegFare": {
+          "dollarsAmount": {
+           "accommodation": "712.00",
+           "rail": "218.00",
+           "total": "930.00"
+          },
+          "farePlan": "YBFD",
+          "pricingUnit": "DOLLARS"
+         },
+         "travelLegId": "aac70922_2026-11-14T15:40:00",
+         "isUnaccompaniedChild": false,
+         "serviceFromVendor": false,
+         "selectedProduct": {
+          "availableInventory": 7,
+          "code": "1019",
+          "count": 1,
+          "lowAvailabilityThreshold": 4,
+          "lowestAvailabilityThreshold": null,
+          "maxAllowedCount": 1,
+          "name": "Roomette",
+          "rbd": "EA",
+          "rbdType": "Sleeper",
+          "isSelectedRoom": false,
+          "capacity": 2,
+          "seatAssignRBD": false
+         }
+        }
+       ],
+       "category": "RG",
+       "travelClass": "Sleeper",
+       "fareFamily": "NA",
+       "isThroughfare": false,
+       "chargeType": "",
+       "saleIndicator": false,
+       "isMixedClass": false,
+       "maxoccupancy": false
+      }
+     ],
+     "travelLegs": [
+      {
+       "destination": {
+        "schedule": {
+         "arrivalDateTime": "2026-11-15T10:12:00"
+        },
+        "code": "CHI",
+        "name": "Chicago, IL"
+       },
+       "origin": {
+        "schedule": {
+         "departureDateTime": "2026-11-14T15:40:00"
+        },
+        "code": "NYP",
+        "name": "New York, NY"
+       },
+       "travelService": {
+        "amenities": [
+         {
+          "code": "B",
+          "name": "Checked Baggage"
+         },
+         {
+          "code": "L",
+          "name": "Cafe"
+         },
+         {
+          "code": "T",
+          "name": "Flexible Dining"
+         },
+         {
+          "code": "N",
+          "name": "Free WiFi"
+         }
+        ],
+        "carrier": "AMTRAK",
+        "name": "Lake Shore Limited",
+        "number": "49",
+        "type": "TRAIN",
+        "isAcela": false
+       },
+       "elapsedTime": "P0DT19H32M",
+       "id": "aac70922_2026-11-14T15:40:00",
+       "isBorderCross": false,
+       "isCancelled": false,
+       "isRestricted": false,
+       "salesOverrideFlag": false,
+       "numberOfStops": 0,
+       "isSelfTransfer": false,
+       "elapsedSeconds": 70320,
+       "hasLayover": false,
+       "layover": "",
+       "transferStation": "CHI",
+       "isCollapsed": false,
+       "popoverInfo": {
+        "title": "Transfer",
+        "message": ""
+       },
+       "segmentNumber": 1
+      }
+     ]
+    }
+   }
+  ]
+ }
+}

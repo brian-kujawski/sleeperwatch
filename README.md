@@ -95,21 +95,28 @@ blank, find the field holding the room name in the sample entry, add it to
 `_accommodation_name()` in `sleeperwatch/amtrak.py`, and run
 `sleeperwatch reparse` to fix any rows already stored.
 
-### How Amtrak prices sleepers (from a live capture)
+### How Amtrak prices sleepers (from live captures)
 
 A search returns one sleeper fare per train: travel class `Sleeper`, fare
 family `NA` (shown as "Standard"), priced for the cheapest room available,
 normally a Roomette. The price is split into rail fare and room charge.
 Other room types such as Bedrooms appear only with a count of rooms left and
-a $0 price. sleeperwatch stores those counts in a `room_availability` table,
-so you can still watch Bedrooms sell out.
+a $0 price.
 
-To find out whether Amtrak will price Bedrooms directly, run
-`sleeperwatch discover --probe-rooms`. After each search it retries with
-Amtrak's room-pricing flags and reports what comes back. While discover is
-running, it also saves any other Amtrak API call the site makes (for
-example, when you open a train's room options and pick a Bedroom) as an
-`other-*.json` file in the captures folder.
+When you pick a Bedroom on the site, it asks for that room's price
+separately, at `/dotcom/journey-solution-option/adhoc-fare`. That request
+refers back to the search it follows: a cache ID and the train's IDs, which
+change on every search. `fetch` sends the same request for each unpriced
+room on your watched trains. That's one extra request per room type, per
+train, per date; turn it off with `price_rooms = false` on a watch. Room
+counts are stored in `room_availability` as well. This currently works for
+direct (single-train) trips only. The site's request for a connecting trip
+hasn't been captured yet.
+
+`sleeperwatch discover --probe-rooms` runs that same Bedroom pricing after
+each search you make by hand, so you can check it against the live site.
+discover also saves any other Amtrak API call the site makes (cart and so on)
+as an `other-*.json` file in the captures folder.
 
 ## Day-to-day
 
