@@ -8,15 +8,29 @@ Works on Linux, macOS and Windows (Python 3.11+).
 
 ## Install
 
+Linux / macOS:
+
 ```sh
 git clone https://github.com/brian-kujawski/sleeperwatch
 cd sleeperwatch
 python3 -m venv .venv
-. .venv/bin/activate                 # Windows: .venv\Scripts\activate
-pip install -e ".[plot]"             # drop [plot] if you don't want charts
+source .venv/bin/activate
+pip install -e ".[plot]"
 python -m playwright install chromium
 ```
 
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/brian-kujawski/sleeperwatch
+cd sleeperwatch
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[plot]"
+python -m playwright install chromium
+```
+
+Use `pip install -e .` instead if you don't want charts (it skips matplotlib).
 `pipx install ".[plot]"` also works if you'd rather not manage a venv.
 
 **Browser.** By default sleeperwatch drives your installed Google Chrome,
