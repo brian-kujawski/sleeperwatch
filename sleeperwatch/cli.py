@@ -7,6 +7,7 @@
   trains    catalog of train numbers and names seen in searches
   report    latest / lowest / highest price seen per train, room and fare
   export    dump all observations to CSV
+  dashboard interactive HTML dashboard of prices (opens in your browser)
   plot      price-vs-days-before-departure charts (PNG, needs matplotlib)
   reparse   rebuild observations from stored raw responses
 """
@@ -266,6 +267,20 @@ def cmd_reparse(args):
     print(f"Rebuilt {n} observation row(s) from stored responses.")
 
 
+def cmd_dashboard(args):
+    from . import dashboard
+    p = _paths(args)
+    db = args.open_db()
+    data = dashboard.collect(db)
+    out = Path(args.out).expanduser() if args.out else p["data"] / "dashboard.html"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(dashboard.render(data), encoding="utf-8")
+    print(f"Wrote {out} ({len(data['departures'])} departures)")
+    if not args.no_open:
+        import webbrowser
+        webbrowser.open(out.resolve().as_uri())
+
+
 def cmd_trains(args):
     p = _paths(args)
     db = args.open_db()
@@ -366,6 +381,11 @@ def main(argv=None):
                    help="after each search, retry it with Amtrak's room-pricing flags to see "
                         "whether Bedrooms etc. come back priced (2 extra requests per search)")
     d.set_defaults(func=cmd_discover)
+
+    db_ = sub.add_parser("dashboard", help="build an interactive HTML dashboard and open it")
+    db_.add_argument("--out", metavar="PATH", help="where to write it (default: dashboard.html in the data folder)")
+    db_.add_argument("--no-open", action="store_true", help="write the file without opening a browser")
+    db_.set_defaults(func=cmd_dashboard)
 
     tr = sub.add_parser("trains", help="list train numbers and names seen in searches")
     tr.add_argument("--all", action="store_true", help="include trains without sleepers")

@@ -154,6 +154,7 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
     test_room_pricing()
     test_direct_only()
     test_train_catalog()
+    test_dashboard()
     print("all offline tests passed")
 
 
@@ -196,6 +197,33 @@ def test_train_catalog():
                       "trains", "--scan-captures"])
         out = buf.getvalue()
         assert "Lake Shore Limited" in out and "NYP->CHI" in out and "15:40" in out, out
+
+
+def test_dashboard():
+    """Departures are grouped per route/party/room/train/date; overlapping
+    rows at one check collapse to the cheapest; the page embeds safely."""
+    from sleeperwatch import dashboard
+    with tempfile.TemporaryDirectory() as tmp:
+        db = store.connect(Path(tmp) / "f.db")
+        rows = []
+        for watch in ("a", "b"):                      # two watches sharing one search
+            for at, price in (("2026-10-01T10:00:00+00:00", 900.0), ("2026-10-08T10:00:00+00:00", 850.0)):
+                for fam, bump in (("NA", 0), ("FLX", 40)):
+                    rows.append((at, watch, "NYP", "CHI", "2026-12-09", 2, "51", "Card</script>inal",
+                                 "2026-12-09T06:45:00", "Sleeper", "Roomette", fam, price + bump, 60.0))
+        db.executemany("""INSERT INTO observations (observed_at, watch, origin, destination, travel_date,
+            passengers, train_number, train_name, depart, travel_class, accommodation, family_code, price, days_out)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", rows)
+        db.commit()
+        data = dashboard.collect(db)
+        db.close()
+    assert len(data["departures"]) == 1
+    d = data["departures"][0]
+    assert (d["route"], d["pax"], d["room"], d["train"], d["date"], d["depart"]) == \
+        ("NYP→CHI", 2, "Roomette", "51", "2026-12-09", "06:45")
+    assert [o[2] for o in d["obs"]] == [900.0, 850.0], d["obs"]
+    html = dashboard.render(data)
+    assert html.count("</script>") == 1 and "Card<\\/script>inal" in html
 
 
 def test_room_pricing():
