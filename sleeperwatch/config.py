@@ -18,6 +18,7 @@ DEFAULTS = {
     "accommodations": [],    # e.g. ["Roomette"]; substring match; empty = all
     "fare_families": [],     # e.g. ["VLU", "FLX"]; empty = all
     "price_rooms": True,     # also price rooms the search leaves unpriced (Bedrooms); 1 request each
+    "refresh_window": 0,     # hours; skip a trip-date searched more recently than this (0 = always search)
 }
 
 

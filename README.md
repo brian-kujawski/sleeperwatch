@@ -127,6 +127,13 @@ as an `other-*.json` file in the captures folder.
    only to narrow to particular train numbers.
 2. `sleeperwatch fetch --dry-run`: lists what would be checked.
 3. `sleeperwatch fetch`: checks everything once. A browser window opens and closes.
+   **Refresh window.** With `refresh_window = 48` (hours) in `[defaults]` or
+   on a watch, `fetch` skips any trip-date searched within the last 48 hours,
+   so extending one watch's dates only searches the new dates. Freshness is
+   per search (stations, date and party size), and watches that share a
+   search share it: a watch that hasn't seen a recent search yet reuses it
+   from the database instead of asking Amtrak again. `--dry-run` shows what
+   will be searched, reused or skipped; `--force` searches everything.
 4. `sleeperwatch report`: latest, lowest and highest price per train, room and fare.
    `sleeperwatch dashboard` builds an interactive page from the database and
    opens it in your browser: the cheapest departure, price by travel date with

@@ -11,6 +11,7 @@ passengers = 2          # room prices depend on party size; match how you'd book
 only_sleepers = true    # store only room fares (set false to keep coach for comparison)
 price_rooms = true      # also price Bedrooms etc., which Amtrak's search leaves unpriced (1 request each)
 direct_only = true      # only single-train trips: skip connections and anything with a bus segment
+refresh_window = 48     # hours: skip trip-dates searched more recently than this (fetch --force ignores it)
 # fare_families = ["VLU", "FLX"]   # optional: Value, Flexible, Saver (SVR), Sale (SAL), ...
 
 [[watch]]

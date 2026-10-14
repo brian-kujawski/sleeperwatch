@@ -155,6 +155,7 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
     test_direct_only()
     test_train_catalog()
     test_dashboard()
+    test_refresh_window()
     print("all offline tests passed")
 
 
@@ -224,6 +225,75 @@ def test_dashboard():
     assert [o[2] for o in d["obs"]] == [900.0, 850.0], d["obs"]
     html = dashboard.render(data)
     assert html.count("</script>") == 1 and "Card<\\/script>inal" in html
+
+
+def test_refresh_window():
+    """Recently searched trip-dates are skipped; new dates are searched; a
+    watch that hasn't seen a recent shared search reuses it; --force overrides."""
+    import json
+    from datetime import datetime, timedelta, timezone
+    cap = json.loads((Path(__file__).parent / "fixtures" / "nyp-chi-2026-11-14.json").read_text(encoding="utf-8"))
+    raw = cap["response"]
+    this_morning = (datetime.now(timezone.utc) - timedelta(hours=5)).isoformat(timespec="seconds")
+    last_week = (datetime.now(timezone.utc) - timedelta(days=6)).isoformat(timespec="seconds")
+    base = {"passengers": 2, "only_sleepers": True, "direct_only": True, "accommodations": [],
+            "fare_families": [], "price_rooms": True, "refresh_window": 48}
+    wb = {**base, "name": "cardinal-wb", "from": "NYP", "to": "CHI", "trains": ["51"]}
+    eb = {**base, "name": "cardinal-eb", "from": "CHI", "to": "NYP", "trains": ["50"]}
+    lsl = {**base, "name": "lsl-wb", "from": "NYP", "to": "CHI", "trains": ["49"]}
+    with tempfile.TemporaryDirectory() as tmp:
+        db = store.connect(Path(tmp) / "f.db")
+        run = store.start_run(db)
+        store.save_response(db, run, wb, "2026-12-09", raw, observed_at=this_morning)
+        store.save_response(db, run, eb, "2026-12-10", raw, observed_at=this_morning)
+        store.save_response(db, run, wb, "2026-12-16", raw, observed_at=last_week)
+        jobs = [(wb, "2026-12-09"), (wb, "2026-12-16"), (wb, "2027-01-06"), (eb, "2026-12-10"), (lsl, "2026-12-09")]
+        got = {(w["name"], d): a for w, d, a, *_ in cli._plan(db, jobs, force=False)}
+        assert got == {
+            ("cardinal-wb", "2026-12-09"): "skip",     # searched this morning
+            ("cardinal-wb", "2026-12-16"): "search",   # last searched 6 days ago > 48h
+            ("cardinal-wb", "2027-01-06"): "search",   # newly added date
+            ("cardinal-eb", "2026-12-10"): "skip",     # untouched watch, fresh
+            ("lsl-wb", "2026-12-09"): "reuse",         # same NYP-CHI search, new to this watch
+        }, got
+        assert {a for *_, a, _l, _g in cli._plan(db, jobs, force=True)} == {"search"}
+        assert {a for *_, a, _l, _g in cli._plan(db, [(dict(wb, refresh_window=0), "2026-12-09")], force=False)} == {"search"}
+        db.close()
+
+        # End to end: a fetch where everything is skip/reuse never opens a browser.
+        wl = Path(tmp) / "w.toml"
+        wl.write_text("""
+[defaults]
+passengers = 2
+refresh_window = 48
+[[watch]]
+name = "cardinal-wb"
+from = "NYP"
+to = "CHI"
+trains = ["51"]
+dates = ["2026-12-09"]
+[[watch]]
+name = "lsl-wb"
+from = "NYP"
+to = "CHI"
+trains = ["49"]
+dates = ["2026-12-09"]
+""")
+        import shutil
+        (Path(tmp) / "data").mkdir()
+        shutil.copy(Path(tmp) / "f.db", Path(tmp) / "data" / "fares.db")
+        def no_browser(*a, **k):
+            raise AssertionError("browser should not be opened")
+        orig, amtrak.BrowserSession = amtrak.BrowserSession, no_browser
+        try:
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                cli.main(["--data-dir", str(Path(tmp) / "data"), "--watchlist", str(wl), "fetch"])
+        finally:
+            amtrak.BrowserSession = orig
+        out = buf.getvalue()
+        assert "0 Amtrak search(es), 1 reused from recent searches, 1 skipped as fresh" in out, out
+        assert "reuse lsl-wb 2026-12-09: 1 fare row(s)" in out, out
 
 
 def test_room_pricing():

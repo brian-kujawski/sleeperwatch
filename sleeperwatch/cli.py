@@ -51,6 +51,31 @@ def _select(watches, names):
 # ---------------------------------------------------------------------------
 
 
+def _plan(db, jobs, force: bool):
+    """Decide per (watch, date) whether to search Amtrak, reuse a recent
+    stored search, or skip because this watch already has fresh data.
+
+    Freshness is per search key (stations, date, party size), not per watch:
+    watches sharing a key share one search. A watch that hasn't stored the
+    newest search yet (e.g. it was just added, or its dates just grew) reuses
+    it instead of asking Amtrak again."""
+    plan = []
+    for w, d in jobs:
+        key = (w["from"], w["to"], d, w["passengers"])
+        window = float(w.get("refresh_window") or 0)
+        latest = store.latest_search(db, *key) if (db is not None and window > 0 and not force) else None
+        if latest is not None:
+            age = store.hours_since(latest["observed_at"])
+            if age < window:
+                if store.watch_has_search(db, w["name"], *key, since=latest["observed_at"]):
+                    plan.append((w, d, "skip", latest, age))
+                else:
+                    plan.append((w, d, "reuse", latest, age))
+                continue
+        plan.append((w, d, "search", None, None))
+    return plan
+
+
 def cmd_fetch(args):
     p = _paths(args)
     watches = _select(config.load(args.watchlist), args.watch)
@@ -58,59 +83,87 @@ def cmd_fetch(args):
     if not jobs:
         print("Nothing to check (no future dates in the watchlist).")
         return
-    print(f"{len(jobs)} trip-date(s) across {len(watches)} watch(es)")
+
+    db = args.open_db() if (p["db"].exists() or not args.dry_run) else None
+    plan = _plan(db, jobs, args.force)
+    n_search = len({(w["from"], w["to"], d, w["passengers"]) for w, d, a, *_ in plan if a == "search"})
+    n_reuse = sum(1 for *_, a, _l, _g in plan if a == "reuse")
+    n_skip = sum(1 for *_, a, _l, _g in plan if a == "skip")
+    print(f"{len(jobs)} trip-date(s) across {len(watches)} watch(es): "
+          f"{n_search} Amtrak search(es), {n_reuse} reused from recent searches, {n_skip} skipped as fresh")
     if args.dry_run:
-        for w, d in jobs:
-            print(f"  {w['name']}: {w['from']}->{w['to']} {d} x{w['passengers']}")
+        for w, d, action, latest, age in plan:
+            if action == "search":
+                what = "search"
+            elif action == "reuse":
+                what = f"reuse search from {age:.0f}h ago"
+            else:
+                what = f"skip (checked {age:.0f}h ago, window {float(w['refresh_window']):g}h)"
+            print(f"  {w['name']}: {w['from']}->{w['to']} {d} x{w['passengers']}  {what}")
         return
 
-    db = args.open_db()
     run_id = store.start_run(db, note=" ".join(sys.argv[1:]))
+    saved = 0
+    try:
+        # Reuses need no browser.
+        for w, d, action, latest, age in plan:
+            if action == "reuse":
+                n = store.save_response(db, run_id, w, d, store.load_body(latest), observed_at=latest["observed_at"])
+                saved += n
+                print(f"  reuse {w['name']} {d}: {n} fare row(s) from the search {age:.0f}h ago")
+        to_search = [(w, d) for w, d, action, *_ in plan if action == "search"]
+        if to_search:
+            saved += _search_jobs(args, p, db, run_id, to_search)
+        elif not n_reuse:
+            print("Everything is within its refresh window; nothing to fetch. Use --force to search anyway.")
+    finally:
+        store.finish_run(db, run_id)
+    print(f"Done. {saved} observation row(s) saved to {p['db']}")
+
+
+def _search_jobs(args, p, db, run_id, jobs) -> int:
     # Several watches can share one search (same pair/date/party, different
     # trains). Ask Amtrak once and reuse the answer.
     cache: dict[tuple, dict] = {}
     consecutive_failures = 0
     saved = 0
-    try:
-        with amtrak.BrowserSession(p["profile"], headless=args.headless, channel=args.channel,
-                                   executable=args.browser, reset_profile=args.reset_profile) as s:
-            print("Warming up browser session...")
-            s.warm_up()
-            for w, d in jobs:
-                key = (w["from"], w["to"], d, w["passengers"])
-                label = f"{w['name']} {d}"
-                try:
-                    if key not in cache:
-                        raw = s.search_raw(*key)
-                        # Watches sharing this search decide which unpriced rooms to price.
-                        sharing = [x for x, xd in jobs
-                                   if xd == d and (x["from"], x["to"], xd, x["passengers"]) == key
-                                   and x.get("price_rooms", True)]
-                        if sharing:
-                            def want(train, room, sharing=sharing):
-                                return any(config.keep_train_number(x, train) and config.keep_room(x, room)
-                                           for x in sharing)
-                            entries = s.price_rooms(raw, amtrak.build_payload(*key), want=want)
-                            raw[amtrak.ADHOC_KEY] = entries
-                            for e in entries:
-                                if e.get("error"):
-                                    print(f"        {e['room']} on #{e['train_number']}: {e['error']}")
-                        cache[key] = raw
-                        time.sleep(random.uniform(2.0, 4.5))  # be polite
-                    n = store.save_response(db, run_id, w, d, cache[key])
-                    saved += n
-                    consecutive_failures = 0
-                    print(f"  ok    {label}: {n} fare row(s)" + ("" if n else "  <- no matching sleeper fares (sold out, wrong train number, or filters too narrow)"))
-                except Exception as e:
-                    consecutive_failures += 1
-                    store.record_failure(db, run_id, w["name"], d, str(e))
-                    print(f"  FAIL  {label}: {e}")
-                    if consecutive_failures >= 3:
-                        print("Three failures in a row; stopping so we don't hammer a blocked session.")
-                        break
-    finally:
-        store.finish_run(db, run_id)
-    print(f"Done. {saved} observation row(s) saved to {p['db']}")
+    with amtrak.BrowserSession(p["profile"], headless=args.headless, channel=args.channel,
+                               executable=args.browser, reset_profile=args.reset_profile) as s:
+        print("Warming up browser session...")
+        s.warm_up()
+        for w, d in jobs:
+            key = (w["from"], w["to"], d, w["passengers"])
+            label = f"{w['name']} {d}"
+            try:
+                if key not in cache:
+                    raw = s.search_raw(*key)
+                    # Watches sharing this search decide which unpriced rooms to price.
+                    sharing = [x for x, xd in jobs
+                               if xd == d and (x["from"], x["to"], xd, x["passengers"]) == key
+                               and x.get("price_rooms", True)]
+                    if sharing:
+                        def want(train, room, sharing=sharing):
+                            return any(config.keep_train_number(x, train) and config.keep_room(x, room)
+                                       for x in sharing)
+                        entries = s.price_rooms(raw, amtrak.build_payload(*key), want=want)
+                        raw[amtrak.ADHOC_KEY] = entries
+                        for e in entries:
+                            if e.get("error"):
+                                print(f"        {e['room']} on #{e['train_number']}: {e['error']}")
+                    cache[key] = raw
+                    time.sleep(random.uniform(2.0, 4.5))  # be polite
+                n = store.save_response(db, run_id, w, d, cache[key])
+                saved += n
+                consecutive_failures = 0
+                print(f"  ok    {label}: {n} fare row(s)" + ("" if n else "  <- no matching sleeper fares (sold out, wrong train number, or filters too narrow)"))
+            except Exception as e:
+                consecutive_failures += 1
+                store.record_failure(db, run_id, w["name"], d, str(e))
+                print(f"  FAIL  {label}: {e}")
+                if consecutive_failures >= 3:
+                    print("Three failures in a row; stopping so we don't hammer a blocked session.")
+                    break
+    return saved
 
 
 def cmd_discover(args):
@@ -371,6 +424,7 @@ def main(argv=None):
     f.add_argument("--browser", metavar="PATH", help=BROWSER_HELP)
     f.add_argument("--reset-profile", action="store_true", help=RESET_HELP)
     f.add_argument("--dry-run", action="store_true", help="list what would be checked")
+    f.add_argument("--force", action="store_true", help="ignore refresh_window and search every trip-date")
     f.set_defaults(func=cmd_fetch)
 
     d = sub.add_parser("discover", help="capture a hand-made search for inspection")

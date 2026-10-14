@@ -237,6 +237,37 @@ def _insert_observations(db, response_id, observed_at, watch, travel_date, raw: 
     return len(rows)
 
 
+def latest_search(db, origin: str, destination: str, travel_date: str, passengers: int):
+    """Newest stored search for this station pair, date and party size, from
+    any watch (watches with the same key share one search). None if never searched."""
+    return db.execute(
+        """SELECT id, observed_at, watch, body_gz FROM raw_responses
+           WHERE origin=? AND destination=? AND travel_date=? AND passengers=?
+           ORDER BY observed_at DESC, id DESC LIMIT 1""",
+        (origin, destination, travel_date, passengers)).fetchone()
+
+
+def watch_has_search(db, watch: str, origin: str, destination: str, travel_date: str,
+                     passengers: int, since: str) -> bool:
+    """Whether this watch already stored a search for the key at or after `since`."""
+    return db.execute(
+        """SELECT 1 FROM raw_responses
+           WHERE watch=? AND origin=? AND destination=? AND travel_date=? AND passengers=?
+             AND observed_at >= ? LIMIT 1""",
+        (watch, origin, destination, travel_date, passengers, since)).fetchone() is not None
+
+
+def load_body(row) -> dict:
+    return json.loads(gzip.decompress(row["body_gz"]))
+
+
+def hours_since(observed_at: str) -> float:
+    then = datetime.fromisoformat(observed_at)
+    if then.tzinfo is None:
+        then = then.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - then).total_seconds() / 3600
+
+
 def reparse(db, watches_by_name: dict[str, dict]) -> int:
     """Rebuild every observation from the stored raw responses, using the
     current parser and the current watchlist filters."""
