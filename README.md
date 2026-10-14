@@ -120,7 +120,11 @@ as an `other-*.json` file in the captures folder.
 
 ## Day-to-day
 
-1. Edit the watchlist: routes, train numbers, room types, dates or date ranges.
+1. Edit the watchlist: for each watch, a label of your choosing (`name`), the
+   stations, dates or a date range, and how many travelers. By default only
+   single-train trips are kept: connections and anything with a bus segment
+   are skipped (`direct_only = true`). That makes `trains` optional; use it
+   only to narrow to particular train numbers.
 2. `sleeperwatch fetch --dry-run`: lists what would be checked.
 3. `sleeperwatch fetch`: checks everything once. A browser window opens and closes.
 4. `sleeperwatch report`: latest, lowest and highest price per train, room and fare.

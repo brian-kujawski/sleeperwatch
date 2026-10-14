@@ -119,6 +119,12 @@ class TrainOption:
     duration_seconds: int
     fares: list[Fare] = field(default_factory=list)
     unpriced_rooms: list[RoomAvailability] = field(default_factory=list)
+    segments: int = 1          # vehicles in the itinerary; >1 means a connection
+    all_rail: bool = True      # False if any segment isn't a train (e.g. a Thruway bus)
+
+    @property
+    def is_direct_train(self) -> bool:
+        return self.segments == 1 and self.all_rail
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -210,6 +216,10 @@ def parse(raw: dict) -> list[TrainOption]:
             duration_seconds=int(opt.get("elapsedSeconds") or 0),
             fares=fares,
             unpriced_rooms=[r for n, r in unpriced.items() if n not in priced_names],
+            segments=len(travel_legs),
+            # Amtrak marks each segment's vehicle type ("TRAIN" in captures);
+            # buses use another value. Missing type is assumed to be a train.
+            all_rail=all((sv.get("type") or "TRAIN").upper() == "TRAIN" for sv in services),
         ))
     out.sort(key=lambda o: o.depart)
     return out

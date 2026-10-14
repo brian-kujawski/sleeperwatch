@@ -13,6 +13,7 @@ WEEKDAYS = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6
 DEFAULTS = {
     "passengers": 1,
     "only_sleepers": True,   # drop coach/business fares
+    "direct_only": True,     # only single-train itineraries: no connections, no bus segments
     "trains": [],            # train numbers to keep; empty = all trains on the pair
     "accommodations": [],    # e.g. ["Roomette"]; substring match; empty = all
     "fare_families": [],     # e.g. ["VLU", "FLX"]; empty = all
@@ -62,6 +63,8 @@ def expand_dates(w: dict) -> list[str]:
 
 
 def keep_train(w: dict, opt: TrainOption) -> bool:
+    if w.get("direct_only", True) and not opt.is_direct_train:
+        return False
     if not w.get("trains"):
         return True
     numbers = set(opt.train_number.split("+"))

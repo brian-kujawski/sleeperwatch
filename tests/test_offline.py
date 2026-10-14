@@ -152,7 +152,21 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
     test_paths()
     test_real_capture()
     test_room_pricing()
+    test_direct_only()
     print("all offline tests passed")
+
+
+def test_direct_only():
+    """Default watches keep only single-train itineraries."""
+    import json
+    cap = json.loads((Path(__file__).parent / "fixtures" / "nyp-chi-2026-11-14.json").read_text(encoding="utf-8"))
+    opts = amtrak.parse(cap["response"])
+    w = {"trains": []}                                   # direct_only defaults to on
+    assert [o.train_number for o in opts if config.keep_train(w, o)] == ["49"]
+    assert len([o for o in opts if config.keep_train({"direct_only": False}, o)]) == 4
+    # A bus segment disqualifies even a single-segment itinerary.
+    bus = json.loads(json.dumps(cap["response"]).replace('"type": "TRAIN"', '"type": "BUS"'))
+    assert [o for o in amtrak.parse(bus) if config.keep_train(w, o)] == []
 
 
 def test_room_pricing():

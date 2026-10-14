@@ -10,13 +10,14 @@
 passengers = 2          # room prices depend on party size; match how you'd book
 only_sleepers = true    # store only room fares (set false to keep coach for comparison)
 price_rooms = true      # also price Bedrooms etc., which Amtrak's search leaves unpriced (1 request each)
+direct_only = true      # only single-train trips: skip connections and anything with a bus segment
 # fare_families = ["VLU", "FLX"]   # optional: Value, Flexible, Saver (SVR), Sale (SAL), ...
 
 [[watch]]
-name = "lake-shore-westbound"        # unique; used in reports and charts
+name = "lake-shore-westbound"        # any label you like; must be unique. Names this watch in reports and charts
 from = "NYP"
 to = "CHI"
-trains = ["49"]                      # only this train; omit to keep every train on the pair
+# trains = ["49"]                    # optional: only these train numbers. Omit to keep every direct train
 accommodations = ["Roomette", "Bedroom"]   # substring match on room type; omit for all rooms
 dates = ["2026-12-19", "2026-12-20"]
 
