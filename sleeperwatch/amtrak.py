@@ -26,7 +26,8 @@ from typing import Any, Callable
 
 BASE = "https://www.amtrak.com"
 ENDPOINT = "/dotcom/journey-solution-option"
-SEARCH_PAGE = f"{BASE}/tickets/departure.html"
+HOME_PAGE = f"{BASE}/home.html"            # has the search form
+RESULTS_PAGE = f"{BASE}/tickets/departure.html"  # "Select Your Trip"; empty without a search
 
 FARE_FAMILIES = {
     "SAL": "Sale",
@@ -317,7 +318,7 @@ class BrowserSession:
 
     def warm_up(self) -> None:
         page = self.page
-        page.goto(f"{BASE}/home.html", wait_until="domcontentloaded")
+        page.goto(HOME_PAGE, wait_until="domcontentloaded")
         page.wait_for_timeout(2500)
         for x, y in ((420, 330), (760, 470), (980, 300), (600, 600)):
             try:
@@ -331,7 +332,7 @@ class BrowserSession:
             page.mouse.wheel(0, -250)
         except Exception:
             pass
-        page.goto(SEARCH_PAGE, wait_until="domcontentloaded")
+        page.goto(RESULTS_PAGE, wait_until="domcontentloaded")
         page.wait_for_timeout(3000)
         for i in range(6):
             state = self.clearance()
@@ -407,9 +408,11 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome") -
             if isinstance(body, dict):
                 summarize_accommodations(body)
 
-        s.page.on("response", on_response)
-        s.page.goto(SEARCH_PAGE, wait_until="domcontentloaded")
-        print("\nSearch for a sleeper route in the browser window.")
+        # Listen on the whole browser, not one tab, in case results open elsewhere.
+        s._ctx.on("response", on_response)
+        s.page.goto(HOME_PAGE, wait_until="domcontentloaded")
+        print("\nUse the search form on the Amtrak home page to search a sleeper route")
+        print("(one-way, the number of travelers you'd book for).")
         print("Every fare search is captured. Close the browser window when done.\n")
         try:
             s.page.wait_for_event("close", timeout=0)
