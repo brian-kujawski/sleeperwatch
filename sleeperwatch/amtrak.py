@@ -139,6 +139,15 @@ def _money(d: dict | None, key: str) -> float | None:
         return None
 
 
+def _is_room(extra: dict, accom: dict) -> bool:
+    """Whether an additionalProducts entry is a sleeper room. Superliner
+    trains also list seat variants there (e.g. "Lower Level Coach Seat" next
+    to the Coach fare); those aren't rooms, and Amtrak's room-pricing
+    endpoint rejects them ("Cannot connect to system application")."""
+    kind = (extra.get("rbdType") or accom.get("travelClass") or "").lower()
+    return kind == "sleeper"
+
+
 def _main_product(accom: dict) -> dict:
     """The product that gives this fare its class. On a connecting trip each
     leg has its own product (e.g. an Acela First Class Seat, then a Floridian
@@ -203,7 +212,7 @@ def parse(raw: dict) -> list[TrainOption]:
             ))
             for tla in accom.get("travelLegAccommodations") or []:
                 for extra in tla.get("additionalProducts") or []:
-                    if not _money(extra.get("additionalProductFare"), "total"):
+                    if _is_room(extra, accom) and not _money(extra.get("additionalProductFare"), "total"):
                         nm = (extra.get("name") or "").strip()
                         avail = extra.get("availableInventory")
                         if nm and nm not in unpriced:
@@ -280,7 +289,8 @@ def adhoc_requests(raw: dict, search_payload: dict) -> list[UnpricedRoom]:
             for tla in accom.get("travelLegAccommodations") or []:
                 for extra in tla.get("additionalProducts") or []:
                     name = (extra.get("name") or "").strip()
-                    if not name or name in seen or _money(extra.get("additionalProductFare"), "total"):
+                    if (not name or name in seen or not _is_room(extra, accom)
+                            or _money(extra.get("additionalProductFare"), "total")):
                         continue
                     seen.add(name)
 

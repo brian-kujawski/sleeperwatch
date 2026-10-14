@@ -156,6 +156,7 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
     test_train_catalog()
     test_dashboard()
     test_refresh_window()
+    test_seat_variants_are_not_rooms()
     print("all offline tests passed")
 
 
@@ -294,6 +295,25 @@ dates = ["2026-12-09"]
         out = buf.getvalue()
         assert "0 Amtrak search(es), 1 reused from recent searches, 1 skipped as fresh" in out, out
         assert "reuse lsl-wb 2026-12-09: 1 fare row(s)" in out, out
+
+
+def test_seat_variants_are_not_rooms():
+    """Superliner trains list seat variants (e.g. "Lower Level Coach Seat")
+    as additional products of the Coach fare; they must not be priced as
+    rooms or logged as room availability."""
+    import json
+    cap = json.loads((Path(__file__).parent / "fixtures" / "nyp-chi-2026-11-14-bedroom.json").read_text(encoding="utf-8"))
+    raw = json.loads(json.dumps(cap["response"]))
+    lsl = [o for o in raw["data"]["journeySolutionOption"]["journeyLegs"][0]["journeyLegOptions"]
+           if o["travelLegs"][0]["travelService"]["number"] == "49"][0]
+    coach = [a for a in lsl["reservableAccommodations"] if a["travelClass"] == "Coach"][0]
+    coach["travelLegAccommodations"][0]["additionalProducts"] = [{
+        "availableInventory": 8, "name": "Lower Level Coach Seat", "rbd": "YL", "rbdType": "Coach",
+        "additionalProductFare": {"dollarsAmount": {"total": "0.00"}}}]
+    reqs = amtrak.adhoc_requests(raw, cap["request_body"])
+    assert [(r.train_number, r.room) for r in reqs] == [("49", "Bedroom")], reqs
+    opt = [o for o in amtrak.parse(raw) if o.train_number == "49"][0]
+    assert [u.name for u in opt.unpriced_rooms] == ["Bedroom"], opt.unpriced_rooms
 
 
 def test_room_pricing():
