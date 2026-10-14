@@ -100,7 +100,7 @@ def cmd_fetch(args):
 def cmd_discover(args):
     p = _paths(args)
     amtrak.discover(p["profile"], p["captures"], channel=args.channel, executable=args.browser,
-                    reset_profile=args.reset_profile)
+                    reset_profile=args.reset_profile, probe_rooms=args.probe_rooms)
 
 
 REPORT_SQL = """
@@ -309,6 +309,9 @@ def main(argv=None):
     d.add_argument("--channel", default="chrome", choices=["chrome", "msedge", "chromium"], help=CHANNEL_HELP)
     d.add_argument("--browser", metavar="PATH", help=BROWSER_HELP)
     d.add_argument("--reset-profile", action="store_true", help=RESET_HELP)
+    d.add_argument("--probe-rooms", action="store_true",
+                   help="after each search, retry it with Amtrak's room-pricing flags to see "
+                        "whether Bedrooms etc. come back priced (2 extra requests per search)")
     d.set_defaults(func=cmd_discover)
 
     r = sub.add_parser("report", help="latest/low/high per train, room and fare")

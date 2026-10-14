@@ -1,0 +1,3249 @@
+{
+ "request_body": {
+  "journeyRequest": {
+   "fare": {
+    "pricingUnit": "DOLLARS"
+   },
+   "type": "OW",
+   "journeyLegRequests": [
+    {
+     "origin": {
+      "code": "NYP",
+      "schedule": {
+       "departureDateTime": "2026-11-14T00:00:00"
+      }
+     },
+     "destination": {
+      "code": "CHI"
+     },
+     "passengers": [
+      {
+       "id": "P1",
+       "type": "F",
+       "initialType": "adult"
+      }
+     ]
+    }
+   ],
+   "customer": {
+    "tierStatus": "MEMBER"
+   },
+   "isPassRider": false,
+   "isCorporateTraveller": false,
+   "tripTags": true,
+   "singleAdultFare": true,
+   "cascadesWSDOTFilter": false,
+   "xDelay": "60"
+  },
+  "initialJourneyLegOnly": false,
+  "reservableAccomodationOptions": "ALL"
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "journeyRequest": {
+    "customer": {
+     "tierStatus": "Member"
+    },
+    "fare": {
+     "pricingUnit": "DOLLARS"
+    },
+    "journeyLegRequests": [
+     {
+      "destination": {
+       "code": "CHI",
+       "schedule": {
+        "arrivalDateTime": "NA"
+       }
+      },
+      "origin": {
+       "code": "NYP",
+       "schedule": {
+        "departureDateTime": "2026-11-14T00:00:00"
+       }
+      },
+      "passengers": [
+       {
+        "id": "P1",
+        "isDiscounted": false,
+        "isModified": false,
+        "type": "F"
+       }
+      ]
+     }
+    ],
+    "type": "One-Way",
+    "isPassRider": false,
+    "additionalAccoms": false,
+    "tripTags": false,
+    "alternateDayOption": false,
+    "includeTrainsCloseToDeparture": false,
+    "priceAllRBD": false,
+    "cascadesWSDOTFilter": false,
+    "singleAdultFare": true,
+    "segmentPrice": false,
+    "includeRestricted": false,
+    "includeDeparted": false,
+    "cacheId": "cacheId-OW-AAC-false-Member-DOLLARS-NYP-CHI-2026-11-14T00:00:00-SAF-true-segmentPrice-false-1-F"
+   },
+   "journeySolutionOption": {
+    "id": "7e2a34b2-7597-4d7c-9357-c36f119e0428",
+    "journeyLegs": [
+     {
+      "id": "journeyLeg-1",
+      "alternateDayOption": false,
+      "journeyLegOptions": [
+       {
+        "elapsedTime": "P0DT19H32M",
+        "id": "1_2026-11-14T15:40:00_f1e92788",
+        "isBorderCross": false,
+        "isCancelled": false,
+        "isRestricted": false,
+        "destination": {
+         "code": "CHI",
+         "name": "Chicago, IL",
+         "schedule": {
+          "arrivalDateTime": "2026-11-15T10:12:00"
+         }
+        },
+        "origin": {
+         "code": "NYP",
+         "name": "New York, NY",
+         "schedule": {
+          "departureDateTime": "2026-11-14T15:40:00"
+         }
+        },
+        "salesOverrideFlag": false,
+        "cheapestFareIndex": "0",
+        "logicalId": "49_NYP-1S",
+        "nonReservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "COR",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "SAL",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         }
+        ],
+        "travelLegs": [
+         {
+          "elapsedTime": "P0DT19H32M",
+          "id": "19cfede9_2026-11-14T15:40:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "CHI",
+           "name": "Chicago, IL",
+           "schedule": {
+            "arrivalDateTime": "2026-11-15T10:12:00"
+           }
+          },
+          "origin": {
+           "code": "NYP",
+           "name": "New York, NY",
+           "schedule": {
+            "departureDateTime": "2026-11-14T15:40:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "B",
+             "name": "Checked Baggage"
+            },
+            {
+             "code": "L",
+             "name": "Cafe"
+            },
+            {
+             "code": "T",
+             "name": "Flexible Dining"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Lake Shore Limited",
+           "number": "49",
+           "type": "TRAIN",
+           "isAcela": false
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 70320
+         }
+        ],
+        "reservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "VLU",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "139.00",
+            "total": "139.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "19cfede9_2026-11-14T15:40:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 22,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YD",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "139.00",
+                "total": "139.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "139.00",
+              "total": "139.00"
+             },
+             "farePlan": "YDVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "FLX",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "152.00",
+            "total": "152.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "19cfede9_2026-11-14T15:40:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 22,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YD",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "152.00",
+                "total": "152.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "152.00",
+              "total": "152.00"
+             },
+             "farePlan": "YDFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Sleeper",
+          "fareFamily": "NA",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "608.00",
+            "rail": "218.00",
+            "total": "826.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "19cfede9_2026-11-14T15:40:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 5,
+             "capacity": 2,
+             "code": "1019",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Roomette",
+             "rbd": "EB",
+             "rbdType": "Sleeper",
+             "seatAssignRBD": false
+            },
+            "additionalProducts": [
+             {
+              "availableInventory": 3,
+              "capacity": 2,
+              "code": "1016",
+              "count": 1,
+              "lowAvailabilityThreshold": 4,
+              "maxAllowedCount": 1,
+              "name": "Bedroom",
+              "rbd": "DS",
+              "rbdType": "Sleeper",
+              "seatAssignRBD": false,
+              "additionalProductFare": {
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "0.00",
+                "total": "0.00"
+               }
+              },
+              "passengers": [
+               {
+                "id": "P1",
+                "initialType": "F",
+                "isDiscounted": false,
+                "isModified": false,
+                "passengerFare": {
+                 "pricingUnit": "DOLLARS",
+                 "dollarsAmount": {
+                  "accommodation": "0.00",
+                  "rail": "0.00",
+                  "total": "0.00"
+                 }
+                },
+                "type": "F",
+                "ageGroup": "adult"
+               }
+              ]
+             }
+            ],
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "608.00",
+                "rail": "218.00",
+                "total": "826.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "608.00",
+              "rail": "218.00",
+              "total": "826.00"
+             },
+             "farePlan": "YBFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         }
+        ],
+        "isSegPriceAvailable": false,
+        "isRTDiscountAvailable": false,
+        "isFilteredForPoints": false,
+        "seatCapacityInfo": {
+         "seatCapacityTravelClasses": [
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "49"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "49"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "49"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "49"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "49"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "DS",
+           "trainNumber": "49"
+          }
+         ]
+        },
+        "orderableAncillaries": [
+         {
+          "rbd": "BV",
+          "rbdType": "Bicycle",
+          "maxAllowedCount": 1,
+          "availableInventory": 6,
+          "description": "Bicycle",
+          "ancillaryFare": {
+           "dollarsAmount": {
+            "total": "20.00"
+           }
+          },
+          "totalDollarsAmount": "20.00",
+          "travelLegId": "19cfede9_2026-11-14T15:40:00"
+         }
+        ],
+        "nonOrderableAncillaries": [
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "19cfede9_2026-11-14T15:40:00"
+         }
+        ],
+        "isRecommended": "Y",
+        "fastestTrip": true,
+        "lowestFare": true,
+        "elapsedSeconds": 70320
+       },
+       {
+        "elapsedTime": "P1DT0H45M",
+        "id": "2_2026-11-14T09:00:00_5e9ee5bd",
+        "isBorderCross": false,
+        "isCancelled": false,
+        "isRestricted": false,
+        "destination": {
+         "code": "CHI",
+         "name": "Chicago, IL",
+         "schedule": {
+          "arrivalDateTime": "2026-11-15T08:45:00"
+         }
+        },
+        "origin": {
+         "code": "NYP",
+         "name": "New York, NY",
+         "schedule": {
+          "departureDateTime": "2026-11-14T09:00:00"
+         }
+        },
+        "salesOverrideFlag": false,
+        "cheapestFareIndex": "0",
+        "logicalId": "2205_NYP-40_WAS-2S",
+        "nonReservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Business",
+          "fareFamily": "SAL",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "First",
+          "fareFamily": "SAL",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Business",
+          "fareFamily": "COR",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         }
+        ],
+        "travelLegs": [
+         {
+          "elapsedTime": "P0DT3H11M",
+          "id": "608f73a0_2026-11-14T09:00:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "WAS",
+           "name": "Washington, DC",
+           "schedule": {
+            "arrivalDateTime": "2026-11-14T12:11:00"
+           }
+          },
+          "origin": {
+           "code": "NYP",
+           "name": "New York, NY",
+           "schedule": {
+            "departureDateTime": "2026-11-14T09:00:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "S",
+             "name": "Cafe"
+            },
+            {
+             "code": "Q",
+             "name": "Quiet Car"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            },
+            {
+             "code": "A",
+             "name": "Seat Selection"
+            },
+            {
+             "code": "Z",
+             "name": "Seat Display"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Acela",
+           "number": "2205",
+           "type": "TRAIN",
+           "isAcela": true,
+           "travelServiceTag": [
+            "NextGen"
+           ],
+           "equipmentCode": "NGA"
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 11460
+         },
+         {
+          "elapsedTime": "P0DT17H48M",
+          "id": "a265b6d4_2026-11-14T15:57:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "CHI",
+           "name": "Chicago, IL",
+           "schedule": {
+            "arrivalDateTime": "2026-11-15T08:45:00"
+           }
+          },
+          "origin": {
+           "code": "WAS",
+           "name": "Washington, DC",
+           "schedule": {
+            "departureDateTime": "2026-11-14T15:57:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "B",
+             "name": "Checked Baggage"
+            },
+            {
+             "code": "L",
+             "name": "Cafe"
+            },
+            {
+             "code": "D",
+             "name": "Traditional Dining"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Floridian",
+           "number": "40",
+           "type": "TRAIN",
+           "isAcela": false
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 64080
+         }
+        ],
+        "reservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Business",
+          "fareFamily": "VLU",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "252.00",
+            "total": "252.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "608f73a0_2026-11-14T09:00:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 23,
+             "capacity": 1,
+             "code": "1013",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Business Class Seat",
+             "rbd": "KE",
+             "rbdType": "Business",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "252.00",
+                "total": "252.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "252.00",
+              "total": "252.00"
+             },
+             "farePlan": "KEVD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "a265b6d4_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "252.00",
+                "total": "252.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "First",
+          "fareFamily": "VLU",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "418.00",
+            "total": "418.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "608f73a0_2026-11-14T09:00:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 9,
+             "capacity": 1,
+             "code": "1010",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "First Class Seat",
+             "rbd": "PE",
+             "rbdType": "First",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "418.00",
+                "total": "418.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "418.00",
+              "total": "418.00"
+             },
+             "farePlan": "PEVD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "a265b6d4_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "418.00",
+                "total": "418.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Business",
+          "fareFamily": "FLX",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "283.00",
+            "total": "283.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "608f73a0_2026-11-14T09:00:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 23,
+             "capacity": 1,
+             "code": "1013",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Business Class Seat",
+             "rbd": "KE",
+             "rbdType": "Business",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "283.00",
+                "total": "283.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "283.00",
+              "total": "283.00"
+             },
+             "farePlan": "KEFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "a265b6d4_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "283.00",
+                "total": "283.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "First",
+          "fareFamily": "FLX",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "469.00",
+            "total": "469.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "608f73a0_2026-11-14T09:00:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 9,
+             "capacity": 1,
+             "code": "1010",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "First Class Seat",
+             "rbd": "PE",
+             "rbdType": "First",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "469.00",
+                "total": "469.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "469.00",
+              "total": "469.00"
+             },
+             "farePlan": "PEFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "a265b6d4_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "469.00",
+                "total": "469.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Sleeper",
+          "fareFamily": "NA",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "361.00",
+            "rail": "564.00",
+            "total": "925.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "608f73a0_2026-11-14T09:00:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 9,
+             "capacity": 1,
+             "code": "1010",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "First Class Seat",
+             "rbd": "PE",
+             "rbdType": "First",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "361.00",
+                "rail": "564.00",
+                "total": "925.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "361.00",
+              "rail": "564.00",
+              "total": "925.00"
+             },
+             "farePlan": "PEFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "a265b6d4_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 18,
+             "capacity": 2,
+             "code": "1019",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Roomette",
+             "rbd": "EE",
+             "rbdType": "Sleeper",
+             "seatAssignRBD": false
+            },
+            "additionalProducts": [
+             {
+              "availableInventory": 2,
+              "capacity": 2,
+              "code": "1016",
+              "count": 1,
+              "lowAvailabilityThreshold": 4,
+              "maxAllowedCount": 1,
+              "name": "Bedroom",
+              "rbd": "DS",
+              "rbdType": "Sleeper",
+              "seatAssignRBD": false,
+              "additionalProductFare": {
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "0.00",
+                "total": "0.00"
+               }
+              },
+              "passengers": [
+               {
+                "id": "P1",
+                "initialType": "F",
+                "isDiscounted": false,
+                "isModified": false,
+                "passengerFare": {
+                 "pricingUnit": "DOLLARS",
+                 "dollarsAmount": {
+                  "accommodation": "0.00",
+                  "rail": "0.00",
+                  "total": "0.00"
+                 }
+                },
+                "type": "F",
+                "ageGroup": "adult"
+               }
+              ]
+             }
+            ],
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "361.00",
+                "rail": "564.00",
+                "total": "925.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YBFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         }
+        ],
+        "isSegPriceAvailable": false,
+        "isRTDiscountAvailable": false,
+        "isFilteredForPoints": false,
+        "seatCapacityInfo": {
+         "seatCapacityTravelClasses": [
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "K",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "K",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "First",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "PK",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "First",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "PK",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "First",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "PK",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "K",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "First",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "PK",
+           "trainNumber": "2205"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "DS",
+           "trainNumber": "40"
+          }
+         ]
+        },
+        "orderableAncillaries": [],
+        "nonOrderableAncillaries": [
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "608f73a0_2026-11-14T09:00:00"
+         },
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "a265b6d4_2026-11-14T15:57:00"
+         }
+        ],
+        "isRecommended": "Y",
+        "fastestTrip": false,
+        "lowestFare": false,
+        "elapsedSeconds": 89100
+       },
+       {
+        "elapsedTime": "P0DT22H53M",
+        "id": "3_2026-11-14T10:52:00_b3623fca",
+        "isBorderCross": false,
+        "isCancelled": false,
+        "isRestricted": false,
+        "destination": {
+         "code": "CHI",
+         "name": "Chicago, IL",
+         "schedule": {
+          "arrivalDateTime": "2026-11-15T08:45:00"
+         }
+        },
+        "origin": {
+         "code": "NYP",
+         "name": "New York, NY",
+         "schedule": {
+          "departureDateTime": "2026-11-14T10:52:00"
+         }
+        },
+        "salesOverrideFlag": false,
+        "cheapestFareIndex": "0",
+        "logicalId": "43_NYP-40_PGH-2S",
+        "nonReservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "SAL",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "COR",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         }
+        ],
+        "travelLegs": [
+         {
+          "elapsedTime": "P0DT9H13M",
+          "id": "b59f5185_2026-11-14T10:52:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "PGH",
+           "name": "Pittsburgh, PA",
+           "schedule": {
+            "arrivalDateTime": "2026-11-14T20:05:00"
+           }
+          },
+          "origin": {
+           "code": "NYP",
+           "name": "New York, NY",
+           "schedule": {
+            "departureDateTime": "2026-11-14T10:52:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "B",
+             "name": "Checked Baggage"
+            },
+            {
+             "code": "S",
+             "name": "Cafe"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Pennsylvanian",
+           "number": "43",
+           "type": "TRAIN",
+           "isAcela": false
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 33180
+         },
+         {
+          "elapsedTime": "P0DT9H46M",
+          "id": "60bbbe89_2026-11-14T23:59:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "CHI",
+           "name": "Chicago, IL",
+           "schedule": {
+            "arrivalDateTime": "2026-11-15T08:45:00"
+           }
+          },
+          "origin": {
+           "code": "PGH",
+           "name": "Pittsburgh, PA",
+           "schedule": {
+            "departureDateTime": "2026-11-14T23:59:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "B",
+             "name": "Checked Baggage"
+            },
+            {
+             "code": "L",
+             "name": "Cafe"
+            },
+            {
+             "code": "D",
+             "name": "Traditional Dining"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Floridian",
+           "number": "40",
+           "type": "TRAIN",
+           "isAcela": false
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 35160
+         }
+        ],
+        "reservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "VLU",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "173.00",
+            "total": "173.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "b59f5185_2026-11-14T10:52:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 19,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YC",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "173.00",
+                "total": "173.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "173.00",
+              "total": "173.00"
+             },
+             "farePlan": "YCVD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "60bbbe89_2026-11-14T23:59:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 40,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YE",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "173.00",
+                "total": "173.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YEVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "FLX",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "188.00",
+            "total": "188.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "b59f5185_2026-11-14T10:52:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 19,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YC",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "188.00",
+                "total": "188.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "188.00",
+              "total": "188.00"
+             },
+             "farePlan": "YCFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "60bbbe89_2026-11-14T23:59:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 40,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YE",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "188.00",
+                "total": "188.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YEFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Sleeper",
+          "fareFamily": "NA",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "434.00",
+            "rail": "279.00",
+            "total": "713.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "b59f5185_2026-11-14T10:52:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 19,
+             "capacity": 1,
+             "code": "1023",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Business Class Seat",
+             "rbd": "JC",
+             "rbdType": "Business",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "434.00",
+                "rail": "279.00",
+                "total": "713.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "434.00",
+              "rail": "279.00",
+              "total": "713.00"
+             },
+             "farePlan": "JCFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "60bbbe89_2026-11-14T23:59:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 18,
+             "capacity": 2,
+             "code": "1019",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Roomette",
+             "rbd": "ES",
+             "rbdType": "Sleeper",
+             "seatAssignRBD": false
+            },
+            "additionalProducts": [
+             {
+              "availableInventory": 3,
+              "capacity": 2,
+              "code": "1016",
+              "count": 1,
+              "lowAvailabilityThreshold": 4,
+              "maxAllowedCount": 1,
+              "name": "Bedroom",
+              "rbd": "DS",
+              "rbdType": "Sleeper",
+              "seatAssignRBD": false,
+              "additionalProductFare": {
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "0.00",
+                "total": "0.00"
+               }
+              },
+              "passengers": [
+               {
+                "id": "P1",
+                "initialType": "F",
+                "isDiscounted": false,
+                "isModified": false,
+                "passengerFare": {
+                 "pricingUnit": "DOLLARS",
+                 "dollarsAmount": {
+                  "accommodation": "0.00",
+                  "rail": "0.00",
+                  "total": "0.00"
+                 }
+                },
+                "type": "F",
+                "ageGroup": "adult"
+               }
+              ]
+             }
+            ],
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "434.00",
+                "rail": "279.00",
+                "total": "713.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YBFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Business",
+          "fareFamily": "NA",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "217.00",
+            "total": "217.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "b59f5185_2026-11-14T10:52:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 19,
+             "capacity": 1,
+             "code": "1023",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Business Class Seat",
+             "rbd": "JC",
+             "rbdType": "Business",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "217.00",
+                "total": "217.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "217.00",
+              "total": "217.00"
+             },
+             "farePlan": "JCFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "60bbbe89_2026-11-14T23:59:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 40,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YE",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "217.00",
+                "total": "217.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YEVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         }
+        ],
+        "isSegPriceAvailable": false,
+        "isRTDiscountAvailable": false,
+        "isFilteredForPoints": false,
+        "seatCapacityInfo": {
+         "seatCapacityTravelClasses": [
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "43"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "43"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "JY",
+           "trainNumber": "43"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "JY",
+           "trainNumber": "43"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "43"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "JY",
+           "trainNumber": "43"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "DS",
+           "trainNumber": "40"
+          }
+         ]
+        },
+        "orderableAncillaries": [
+         {
+          "rbd": "BV",
+          "rbdType": "Bicycle",
+          "maxAllowedCount": 1,
+          "availableInventory": 6,
+          "description": "Bicycle",
+          "ancillaryFare": {
+           "dollarsAmount": {
+            "total": "40.00"
+           }
+          },
+          "totalDollarsAmount": "40.00",
+          "travelLegId": "b59f5185_2026-11-14T10:52:00"
+         },
+         {
+          "rbd": "BV",
+          "rbdType": "Bicycle",
+          "maxAllowedCount": 1,
+          "availableInventory": 6,
+          "description": "Bicycle",
+          "ancillaryFare": {
+           "dollarsAmount": {
+            "total": "40.00"
+           }
+          },
+          "totalDollarsAmount": "40.00",
+          "travelLegId": "60bbbe89_2026-11-14T23:59:00"
+         }
+        ],
+        "nonOrderableAncillaries": [
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "b59f5185_2026-11-14T10:52:00"
+         },
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "60bbbe89_2026-11-14T23:59:00"
+         }
+        ],
+        "isRecommended": "Y",
+        "fastestTrip": false,
+        "lowestFare": false,
+        "elapsedSeconds": 82380
+       },
+       {
+        "elapsedTime": "P0DT22H35M",
+        "id": "4_2026-11-14T11:10:00_583430d8",
+        "isBorderCross": false,
+        "isCancelled": false,
+        "isRestricted": false,
+        "destination": {
+         "code": "CHI",
+         "name": "Chicago, IL",
+         "schedule": {
+          "arrivalDateTime": "2026-11-15T08:45:00"
+         }
+        },
+        "origin": {
+         "code": "NYP",
+         "name": "New York, NY",
+         "schedule": {
+          "departureDateTime": "2026-11-14T11:10:00"
+         }
+        },
+        "salesOverrideFlag": false,
+        "cheapestFareIndex": "0",
+        "logicalId": "195_NYP-40_WAS-2S",
+        "nonReservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "COR",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "SAL",
+          "isThroughfare": false,
+          "saleIndicator": false,
+          "message": "NOT AVAILABLE",
+          "reason": "NOT AVAILABLE",
+          "isBorderCross": false
+         }
+        ],
+        "travelLegs": [
+         {
+          "elapsedTime": "P0DT3H27M",
+          "id": "999c4624_2026-11-14T11:10:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "WAS",
+           "name": "Washington, DC",
+           "schedule": {
+            "arrivalDateTime": "2026-11-14T14:37:00"
+           }
+          },
+          "origin": {
+           "code": "NYP",
+           "name": "New York, NY",
+           "schedule": {
+            "departureDateTime": "2026-11-14T11:10:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "S",
+             "name": "Cafe"
+            },
+            {
+             "code": "Q",
+             "name": "Quiet Car"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            },
+            {
+             "code": "A",
+             "name": "Seat Selection"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Northeast Regional",
+           "number": "195",
+           "type": "TRAIN",
+           "isAcela": false
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 12420
+         },
+         {
+          "elapsedTime": "P0DT17H48M",
+          "id": "9f172c4e_2026-11-14T15:57:00",
+          "isBorderCross": false,
+          "isCancelled": false,
+          "isRestricted": false,
+          "destination": {
+           "code": "CHI",
+           "name": "Chicago, IL",
+           "schedule": {
+            "arrivalDateTime": "2026-11-15T08:45:00"
+           }
+          },
+          "origin": {
+           "code": "WAS",
+           "name": "Washington, DC",
+           "schedule": {
+            "departureDateTime": "2026-11-14T15:57:00"
+           }
+          },
+          "salesOverrideFlag": false,
+          "numberOfStops": 0,
+          "travelService": {
+           "amenities": [
+            {
+             "code": "B",
+             "name": "Checked Baggage"
+            },
+            {
+             "code": "L",
+             "name": "Cafe"
+            },
+            {
+             "code": "D",
+             "name": "Traditional Dining"
+            },
+            {
+             "code": "N",
+             "name": "Free WiFi"
+            }
+           ],
+           "carrier": "AMTRAK",
+           "name": "Floridian",
+           "number": "40",
+           "type": "TRAIN",
+           "isAcela": false
+          },
+          "isSelfTransfer": false,
+          "elapsedSeconds": 64080
+         }
+        ],
+        "reservableAccommodations": [
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "VLU",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "161.00",
+            "total": "161.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "999c4624_2026-11-14T11:10:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 170,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YE",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "161.00",
+                "total": "161.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "161.00",
+              "total": "161.00"
+             },
+             "farePlan": "YEVD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "9f172c4e_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "161.00",
+                "total": "161.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Coach",
+          "fareFamily": "FLX",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": false,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "180.00",
+            "total": "180.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "999c4624_2026-11-14T11:10:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 170,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YE",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "180.00",
+                "total": "180.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "180.00",
+              "total": "180.00"
+             },
+             "farePlan": "YEFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "9f172c4e_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "180.00",
+                "total": "180.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Sleeper",
+          "fareFamily": "NA",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "361.00",
+            "rail": "339.00",
+            "total": "700.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "999c4624_2026-11-14T11:10:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 13,
+             "capacity": 1,
+             "code": "1023",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Business Class Seat",
+             "rbd": "JE",
+             "rbdType": "Business",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "361.00",
+                "rail": "339.00",
+                "total": "700.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "361.00",
+              "rail": "339.00",
+              "total": "700.00"
+             },
+             "farePlan": "JEFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "9f172c4e_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 18,
+             "capacity": 2,
+             "code": "1019",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Roomette",
+             "rbd": "EE",
+             "rbdType": "Sleeper",
+             "seatAssignRBD": false
+            },
+            "additionalProducts": [
+             {
+              "availableInventory": 2,
+              "capacity": 2,
+              "code": "1016",
+              "count": 1,
+              "lowAvailabilityThreshold": 4,
+              "maxAllowedCount": 1,
+              "name": "Bedroom",
+              "rbd": "DS",
+              "rbdType": "Sleeper",
+              "seatAssignRBD": false,
+              "additionalProductFare": {
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "0.00",
+                "total": "0.00"
+               }
+              },
+              "passengers": [
+               {
+                "id": "P1",
+                "initialType": "F",
+                "isDiscounted": false,
+                "isModified": false,
+                "passengerFare": {
+                 "pricingUnit": "DOLLARS",
+                 "dollarsAmount": {
+                  "accommodation": "0.00",
+                  "rail": "0.00",
+                  "total": "0.00"
+                 }
+                },
+                "type": "F",
+                "ageGroup": "adult"
+               }
+              ]
+             }
+            ],
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "361.00",
+                "rail": "339.00",
+                "total": "700.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YBFD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         },
+         {
+          "category": "RG",
+          "travelClass": "Business",
+          "fareFamily": "NA",
+          "isThroughfare": false,
+          "chargeType": "",
+          "saleIndicator": false,
+          "isMixedClass": true,
+          "accommodationFare": {
+           "pricingUnit": "DOLLARS",
+           "dollarsAmount": {
+            "accommodation": "0.00",
+            "rail": "234.00",
+            "total": "234.00"
+           }
+          },
+          "travelLegAccommodations": [
+           {
+            "travelLegId": "999c4624_2026-11-14T11:10:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 13,
+             "capacity": 1,
+             "code": "1023",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Business Class Seat",
+             "rbd": "JE",
+             "rbdType": "Business",
+             "seatAssignRBD": true
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "234.00",
+                "total": "234.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "234.00",
+              "total": "234.00"
+             },
+             "farePlan": "JEFD"
+            },
+            "serviceFromVendor": false
+           },
+           {
+            "travelLegId": "9f172c4e_2026-11-14T15:57:00",
+            "isUnaccompaniedChild": false,
+            "reservableProduct": {
+             "availableInventory": 10,
+             "capacity": 1,
+             "code": "1027",
+             "count": 1,
+             "lowAvailabilityThreshold": 4,
+             "maxAllowedCount": 1,
+             "name": "Coach Seat",
+             "rbd": "YF",
+             "rbdType": "Coach",
+             "seatAssignRBD": false
+            },
+            "passengers": [
+             {
+              "id": "P1",
+              "initialType": "F",
+              "isDiscounted": false,
+              "isModified": false,
+              "passengerFare": {
+               "pricingUnit": "DOLLARS",
+               "dollarsAmount": {
+                "accommodation": "0.00",
+                "rail": "234.00",
+                "total": "234.00"
+               }
+              },
+              "type": "F",
+              "ageGroup": "adult"
+             }
+            ],
+            "travelLegFare": {
+             "pricingUnit": "DOLLARS",
+             "dollarsAmount": {
+              "accommodation": "0.00",
+              "rail": "0.00",
+              "total": "0.00"
+             },
+             "farePlan": "YFVD"
+            },
+            "serviceFromVendor": false
+           }
+          ],
+          "maxoccupancy": false
+         }
+        ],
+        "isSegPriceAvailable": false,
+        "isRTDiscountAvailable": false,
+        "isFilteredForPoints": false,
+        "seatCapacityInfo": {
+         "seatCapacityTravelClasses": [
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "195"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "195"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "JY",
+           "trainNumber": "195"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "JY",
+           "trainNumber": "195"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "195"
+          },
+          {
+           "travelClass": "Business",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "JY",
+           "trainNumber": "195"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Coach",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "Y",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "ES",
+           "trainNumber": "40"
+          },
+          {
+           "travelClass": "Sleeper",
+           "criticalCapacity": 0,
+           "availableInventory": 0,
+           "baseRbdCode": "DS",
+           "trainNumber": "40"
+          }
+         ]
+        },
+        "orderableAncillaries": [
+         {
+          "rbd": "BV",
+          "rbdType": "Bicycle",
+          "maxAllowedCount": 1,
+          "availableInventory": 4,
+          "description": "Bicycle",
+          "ancillaryFare": {
+           "dollarsAmount": {
+            "total": "40.00"
+           }
+          },
+          "totalDollarsAmount": "40.00",
+          "travelLegId": "999c4624_2026-11-14T11:10:00"
+         },
+         {
+          "rbd": "BV",
+          "rbdType": "Bicycle",
+          "maxAllowedCount": 1,
+          "availableInventory": 6,
+          "description": "Bicycle",
+          "ancillaryFare": {
+           "dollarsAmount": {
+            "total": "40.00"
+           }
+          },
+          "totalDollarsAmount": "40.00",
+          "travelLegId": "9f172c4e_2026-11-14T15:57:00"
+         }
+        ],
+        "nonOrderableAncillaries": [
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "999c4624_2026-11-14T11:10:00"
+         },
+         {
+          "rbd": "QX",
+          "rbdType": "Pet",
+          "description": "Pet",
+          "reason": "NOT AVAILABLE",
+          "message": "Pets are not available on trips longer than 7 hours or Pets are not allowed for multi legs",
+          "travelLegId": "9f172c4e_2026-11-14T15:57:00"
+         }
+        ],
+        "isRecommended": "Y",
+        "fastestTrip": false,
+        "lowestFare": false,
+        "elapsedSeconds": 81300
+       }
+      ],
+      "pwdNonDedicatedBusSkipFlagEnabled": false
+     }
+    ],
+    "fareFamilyInfo": [
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "Non-refundable.",
+         "Cancel/change fee may apply."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": [
+         "Points refund and change options available."
+        ]
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "false"
+        ]
+       }
+      ],
+      "code": "SVR",
+      "text": "saver",
+      "displayText": "Saver",
+      "farefamilySubclassType": "Coach",
+      "enableFarefamilyforUser": "false"
+     },
+     {
+      "saleIndicator": true,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "50% cancellation fee if canceled before departure.",
+         "No changes permitted."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": []
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "true"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "true"
+        ]
+       }
+      ],
+      "code": "SAL",
+      "text": "Sale",
+      "displayText": "Sale",
+      "farefamilySubclassType": "Coach",
+      "enableFarefamilyforUser": "true"
+     },
+     {
+      "saleIndicator": true,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "50% cancellation fee if canceled before departure.",
+         "No changes permitted."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": []
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "true"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "true"
+        ]
+       }
+      ],
+      "code": "SAL",
+      "text": "Sale",
+      "displayText": "Sale",
+      "farefamilySubclassType": "business",
+      "enableFarefamilyforUser": "true"
+     },
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "Refundability options.",
+         "No changes permitted."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": [
+         "Points refund and change options available."
+        ]
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "false"
+        ]
+       }
+      ],
+      "code": "VAL",
+      "text": "value",
+      "displayText": "Value ",
+      "farefamilySubclassType": "Coach",
+      "enableFarefamilyforUser": "false"
+     },
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "30% cancellation fee if canceled before departure.",
+         "No changes permitted."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": [
+         "Points refund and change options available."
+        ]
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "true"
+        ]
+       }
+      ],
+      "code": "VLU",
+      "text": "Value",
+      "displayText": "Value",
+      "farefamilySubclassType": "Coach",
+      "enableFarefamilyforUser": "true"
+     },
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "30% cancellation fee if canceled before departure.",
+         "No changes permitted."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": [
+         "Points refund and change options available."
+        ]
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "true"
+        ]
+       }
+      ],
+      "code": "VLU",
+      "text": "Value",
+      "displayText": "Value",
+      "farefamilySubclassType": "business",
+      "enableFarefamilyforUser": "true"
+     },
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "Full refund if canceled before departure.",
+         "Changes permitted with no change fee."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": [
+         "Points refund and change options available."
+        ]
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "false"
+        ]
+       }
+      ],
+      "code": "FLX",
+      "text": "Flex",
+      "displayText": "Flex",
+      "farefamilySubclassType": "Coach",
+      "enableFarefamilyforUser": "true"
+     },
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "Full refund if canceled before departure.",
+         "Changes permitted with no change fee."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": [
+         "Points refund and change options available."
+        ]
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "false"
+        ]
+       }
+      ],
+      "code": "FLX",
+      "text": "Flex",
+      "displayText": "Flex",
+      "farefamilySubclassType": "business",
+      "enableFarefamilyforUser": "true"
+     },
+     {
+      "saleIndicator": false,
+      "displayAttributes": [
+       {
+        "key": "fareFamilyContentDollars",
+        "value": [
+         "100% refund before departure.",
+         "No change or cancel fees."
+        ]
+       },
+       {
+        "key": "fareFamilyContentPoints",
+        "value": []
+       },
+       {
+        "key": "nonChangeablePointsFare",
+        "value": [
+         "false"
+        ]
+       },
+       {
+        "key": "nonChangeableDollarsFare",
+        "value": [
+         "false"
+        ]
+       }
+      ],
+      "code": "COR",
+      "text": "Corporate",
+      "displayText": "Corporate",
+      "farefamilySubclassType": "Coach",
+      "enableFarefamilyforUser": "true"
+     }
+    ]
+   },
+   "reservableAccomodationOptions": "ALL",
+   "initialJourneyLegOnly": false,
+   "emailDelivery": true,
+   "level": 0
+  },
+  "errors": []
+ }
+}

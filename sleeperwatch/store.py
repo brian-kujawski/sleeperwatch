@@ -17,7 +17,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .amtrak import TrainOption, parse
+from .amtrak import TrainOption, is_sleeper, parse
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -56,7 +56,22 @@ CREATE TABLE IF NOT EXISTS observations (
     family_code   TEXT,
     price         REAL NOT NULL,
     seats_left    INTEGER,
-    days_out      REAL          -- days between observation and departure
+    days_out      REAL,         -- days between observation and departure
+    rail          REAL,         -- rail-fare part of price
+    room_charge   REAL          -- accommodation part of price
+);
+-- Room types Amtrak lists as available but doesn't price in the search
+-- (it prices only the cheapest room, normally a Roomette).
+CREATE TABLE IF NOT EXISTS room_availability (
+    id            INTEGER PRIMARY KEY,
+    response_id   INTEGER REFERENCES raw_responses(id) ON DELETE CASCADE,
+    observed_at   TEXT NOT NULL,
+    watch         TEXT NOT NULL,
+    travel_date   TEXT NOT NULL,
+    train_number  TEXT NOT NULL,
+    room          TEXT NOT NULL,
+    available     INTEGER,
+    days_out      REAL
 );
 CREATE INDEX IF NOT EXISTS obs_lookup
     ON observations (watch, travel_date, train_number, accommodation, family_code, observed_at);
@@ -81,7 +96,17 @@ def connect(path: Path) -> sqlite3.Connection:
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript(SCHEMA)
+    _migrate(db)
     return db
+
+
+def _migrate(db: sqlite3.Connection) -> None:
+    """Add columns introduced after a database was first created."""
+    have = {r["name"] for r in db.execute("PRAGMA table_info(observations)")}
+    for col, typ in (("rail", "REAL"), ("room_charge", "REAL")):
+        if col not in have:
+            db.execute(f"ALTER TABLE observations ADD COLUMN {col} {typ}")
+    db.commit()
 
 
 def start_run(db: sqlite3.Connection, note: str = "") -> int:
@@ -133,7 +158,7 @@ def _insert_observations(db, response_id, observed_at, watch, travel_date,
                          options: list[TrainOption]) -> int:
     from .config import keep_fare, keep_train  # avoid import cycle
 
-    rows = []
+    rows, avail_rows = [], []
     for opt in options:
         if not keep_train(watch, opt):
             continue
@@ -144,14 +169,26 @@ def _insert_observations(db, response_id, observed_at, watch, travel_date,
                 response_id, observed_at, watch["name"], watch["from"], watch["to"], travel_date,
                 watch["passengers"], opt.train_number, opt.train_name, opt.depart, opt.arrive,
                 f.travel_class, f.accommodation, f.fare_family, f.family_code, f.price,
-                f.seats_left, _days_out(observed_at, opt.depart),
+                f.seats_left, _days_out(observed_at, opt.depart), f.rail, f.accommodation_charge,
             ))
+        if watch.get("only_sleepers", True) or any(is_sleeper(f) for f in opt.fares):
+            for room in opt.unpriced_rooms:
+                if watch.get("accommodations") and not any(
+                        a.lower() in room.name.lower() for a in watch["accommodations"]):
+                    continue
+                avail_rows.append((response_id, observed_at, watch["name"], travel_date,
+                                   opt.train_number, room.name, room.available,
+                                   _days_out(observed_at, opt.depart)))
     db.executemany(
         """INSERT INTO observations
            (response_id, observed_at, watch, origin, destination, travel_date, passengers,
             train_number, train_name, depart, arrive, travel_class, accommodation,
-            fare_family, family_code, price, seats_left, days_out)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", rows)
+            fare_family, family_code, price, seats_left, days_out, rail, room_charge)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", rows)
+    db.executemany(
+        """INSERT INTO room_availability
+           (response_id, observed_at, watch, travel_date, train_number, room, available, days_out)
+           VALUES (?,?,?,?,?,?,?,?)""", avail_rows)
     return len(rows)
 
 
@@ -159,6 +196,7 @@ def reparse(db, watches_by_name: dict[str, dict]) -> int:
     """Rebuild every observation from the stored raw responses, using the
     current parser and the current watchlist filters."""
     db.execute("DELETE FROM observations")
+    db.execute("DELETE FROM room_availability")
     total = 0
     for r in db.execute("SELECT * FROM raw_responses ORDER BY id").fetchall():
         watch = dict(watches_by_name.get(r["watch"]) or {})

@@ -95,6 +95,22 @@ blank, find the field holding the room name in the sample entry, add it to
 `_accommodation_name()` in `sleeperwatch/amtrak.py`, and run
 `sleeperwatch reparse` to fix any rows already stored.
 
+### How Amtrak prices sleepers (from a live capture)
+
+A search returns one sleeper fare per train: travel class `Sleeper`, fare
+family `NA` (shown as "Standard"), priced for the cheapest room available,
+normally a Roomette. The price is split into rail fare and room charge.
+Other room types such as Bedrooms appear only with a count of rooms left and
+a $0 price. sleeperwatch stores those counts in a `room_availability` table,
+so you can still watch Bedrooms sell out.
+
+To find out whether Amtrak will price Bedrooms directly, run
+`sleeperwatch discover --probe-rooms`. After each search it retries with
+Amtrak's room-pricing flags and reports what comes back. While discover is
+running, it also saves any other Amtrak API call the site makes (for
+example, when you open a train's room options and pick a Bedroom) as an
+`other-*.json` file in the captures folder.
+
 ## Day-to-day
 
 1. Edit the watchlist: routes, train numbers, room types, dates or date ranges.

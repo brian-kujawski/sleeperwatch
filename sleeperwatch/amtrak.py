@@ -39,14 +39,6 @@ FARE_FAMILIES = {
     "NA": "Standard",
 }
 
-# Keys we try, in order, to find a human name for an accommodation (e.g.
-# "Roomette", "Bedroom"). The response shape for sleepers is not publicly
-# documented, so the parser looks in several plausible places and the
-# `discover` command dumps the real structure so this list can be tightened.
-_NAME_KEYS = (
-    "accommodationName", "accommodationType", "roomType", "displayName",
-    "name", "description", "productName", "type", "code",
-)
 
 
 class BlockedError(RuntimeError):
@@ -100,12 +92,22 @@ def build_payload(origin: str, destination: str, date: str, passengers: int = 1)
 
 @dataclass
 class Fare:
-    travel_class: str          # Coach / Business / Private Rooms / ...
-    accommodation: str         # Roomette / Bedroom / ... ("" if unknown)
-    fare_family: str           # Value / Flexible / ...
-    family_code: str
-    price: float               # total for the party, USD
-    seats_left: int | None     # inventory left in this bucket, if reported
+    travel_class: str          # Coach / Business / First / Sleeper
+    accommodation: str         # product name: Coach Seat / Roomette / Bedroom / ...
+    fare_family: str           # Value / Flexible / Standard / ...
+    family_code: str           # VLU / FLX / NA / ...
+    price: float               # total for the party, USD (rail + accommodation)
+    seats_left: int | None     # units of this product left (rooms, for sleepers)
+    rail: float | None = None           # rail-fare part of price
+    accommodation_charge: float | None = None  # room charge part of price
+
+
+@dataclass
+class RoomAvailability:
+    """A room type Amtrak lists as available but doesn't price in this
+    search (e.g. Bedrooms alongside the priced Roomette)."""
+    name: str
+    available: int | None
 
 
 @dataclass
@@ -116,40 +118,43 @@ class TrainOption:
     arrive: str
     duration_seconds: int
     fares: list[Fare] = field(default_factory=list)
+    unpriced_rooms: list[RoomAvailability] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-def _first_str(obj: Any, keys=_NAME_KEYS) -> str:
-    if not isinstance(obj, dict):
-        return ""
-    for k in keys:
-        v = obj.get(k)
-        if isinstance(v, str) and v.strip():
-            return v.strip()
-    return ""
+def _money(d: dict | None, key: str) -> float | None:
+    try:
+        return float(((d or {}).get("dollarsAmount") or {}).get(key))
+    except (TypeError, ValueError):
+        return None
 
 
-def _accommodation_name(accom: dict) -> str:
-    """Best-effort room/seat type name for one reservable accommodation."""
-    direct = _first_str(accom, keys=(
-        "accommodationName", "accommodationType", "roomType", "displayName",
-        "accommodationDescription",
-    ))
-    if direct:
-        return direct
-    for tla in accom.get("travelLegAccommodations") or []:
-        product = tla.get("reservableProduct") or {}
-        for candidate in (product, product.get("accommodation"), tla.get("accommodation"), tla):
-            name = _first_str(candidate)
-            if name:
-                return name
-    return ""
+def _main_product(accom: dict) -> dict:
+    """The product that gives this fare its class. On a connecting trip each
+    leg has its own product (e.g. an Acela First Class Seat, then a Floridian
+    Roomette); the one whose rbdType matches the fare's travelClass is the
+    one that matters."""
+    products = [(tla.get("reservableProduct") or {}) for tla in accom.get("travelLegAccommodations") or []]
+    products = [p for p in products if p]
+    cls = (accom.get("travelClass") or "").lower()
+    for prod in products:
+        if (prod.get("rbdType") or "").lower() == cls:
+            return prod
+    return products[0] if products else {}
 
 
 def parse(raw: dict) -> list[TrainOption]:
-    """Flatten the endpoint's response into train options with fares."""
+    """Flatten the endpoint's response into train options with fares.
+
+    Response shape (confirmed against a live capture, 2026-10-14):
+    data.journeySolutionOption.journeyLegs[0].journeyLegOptions[] -> one per
+    itinerary, with travelLegs[] (one per train) and reservableAccommodations[]
+    (one per class x fare family). A sleeper fare is travelClass "Sleeper",
+    fareFamily "NA", priced for the cheapest room (normally a Roomette); other
+    room types appear only under additionalProducts with a $0 fare.
+    """
     data = raw.get("data") or {}
     solution = data.get("journeySolutionOption") or {}
     legs = solution.get("journeyLegs") or []
@@ -169,29 +174,34 @@ def parse(raw: dict) -> list[TrainOption]:
         name = " / ".join(dict.fromkeys(s.get("name") or "Amtrak" for s in services))
 
         fares: list[Fare] = []
+        unpriced: dict[str, RoomAvailability] = {}
         for accom in opt.get("reservableAccommodations") or []:
-            total = (((accom.get("accommodationFare") or {}).get("dollarsAmount") or {}).get("total"))
-            try:
-                price = float(total)
-            except (TypeError, ValueError):
+            fare = accom.get("accommodationFare")
+            price = _money(fare, "total")
+            if price is None or price <= 0:
                 continue
-            if price <= 0:
-                continue
-            seats = None
-            for tla in accom.get("travelLegAccommodations") or []:
-                inv = (tla.get("reservableProduct") or {}).get("availableInventory")
-                if isinstance(inv, int):
-                    seats = inv if seats is None else min(seats, inv)
+            prod = _main_product(accom)
+            inv = prod.get("availableInventory")
             code = accom.get("fareFamily") or "NA"
             fares.append(Fare(
                 travel_class=accom.get("travelClass") or "Unknown",
-                accommodation=_accommodation_name(accom),
+                accommodation=(prod.get("name") or "").strip(),
                 fare_family=FARE_FAMILIES.get(code, code),
                 family_code=code,
                 price=price,
-                seats_left=seats,
+                seats_left=inv if isinstance(inv, int) else None,
+                rail=_money(fare, "rail"),
+                accommodation_charge=_money(fare, "accommodation"),
             ))
+            for tla in accom.get("travelLegAccommodations") or []:
+                for extra in tla.get("additionalProducts") or []:
+                    if not _money(extra.get("additionalProductFare"), "total"):
+                        nm = (extra.get("name") or "").strip()
+                        avail = extra.get("availableInventory")
+                        if nm and nm not in unpriced:
+                            unpriced[nm] = RoomAvailability(nm, avail if isinstance(avail, int) else None)
 
+        priced_names = {f.accommodation for f in fares}
         out.append(TrainOption(
             train_number=number,
             train_name=name,
@@ -199,6 +209,7 @@ def parse(raw: dict) -> list[TrainOption]:
             arrive=((opt.get("destination") or {}).get("schedule") or {}).get("arrivalDateTime", ""),
             duration_seconds=int(opt.get("elapsedSeconds") or 0),
             fares=fares,
+            unpriced_rooms=[r for n, r in unpriced.items() if n not in priced_names],
         ))
     out.sort(key=lambda o: o.depart)
     return out
@@ -206,7 +217,7 @@ def parse(raw: dict) -> list[TrainOption]:
 
 def is_sleeper(fare: Fare) -> bool:
     text = f"{fare.travel_class} {fare.accommodation}".lower()
-    return any(w in text for w in ("room", "bedroom", "sleeper", "private"))
+    return any(w in text for w in ("sleeper", "roomette", "bedroom"))
 
 
 # ---------------------------------------------------------------------------
@@ -498,8 +509,28 @@ def compare_payload(captured: dict) -> list[str]:
             [f"we send, site doesn't: {k}" for k in sorted(ours_k - theirs_k)])
 
 
+# Flags Amtrak echoes back as false in every response's journeyRequest; they
+# look like switches for pricing every room type. `discover --probe-rooms`
+# tries each to find out.
+ROOM_PROBES = {
+    "priceAllRBD": {"priceAllRBD": True},
+    "additionalAccoms": {"additionalAccoms": True},
+}
+
+
+def priced_rooms(raw: dict) -> dict[str, list[str]]:
+    """Train number -> priced sleeper products, e.g. {'49': ['Roomette $826']}."""
+    out: dict[str, list[str]] = {}
+    for o in parse(raw):
+        rooms = [f"{f.accommodation} {f.fare_family} ${f.price:.0f}" for f in o.fares if is_sleeper(f)]
+        if rooms:
+            out[o.train_number] = rooms
+    return out
+
+
 def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
-             executable: str | None = None, reset_profile: bool = False) -> None:
+             executable: str | None = None, reset_profile: bool = False,
+             probe_rooms: bool = False) -> None:
     """Open a visible browser, let the user search by hand, and save each
     journey-solution-option request with its response.
 
@@ -513,6 +544,7 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
     with BrowserSession(profile_dir, headless=False, channel=channel, executable=executable,
                         reset_profile=reset_profile) as s:
         pending: list[dict] = []
+        other_calls: list[dict] = []
         # Our own replays hit the same endpoint; remember them so they
         # aren't captured and replayed again in an endless loop.
         own_replays: list[str] = []
@@ -523,6 +555,16 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
         def on_response(resp):
             # Keep this handler cheap and failure-proof; real work happens in
             # the main loop once the page has settled.
+            if resp.request.method == "POST" and "/dotcom/" in resp.url and ENDPOINT not in resp.url:
+                # Some other Amtrak API call (e.g. when picking a room type).
+                # Record the request so we can learn what it does.
+                try:
+                    body = resp.request.post_data_json
+                except Exception:
+                    body = resp.request.post_data
+                other_calls.append({"url": resp.url, "status": resp.status,
+                                    "request_headers": dict(resp.request.headers), "request_body": body})
+                return
             if ENDPOINT not in resp.url or resp.request.method != "POST":
                 return
             item = {"url": resp.url, "status": resp.status,
@@ -567,6 +609,29 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
                     item["response_source"] = "replayed"
                 except (ValueError, TypeError):
                     item["response"] = {"_text": (res.get("body") or "")[:5000]}
+            if probe_rooms and isinstance(req, dict) and isinstance(item.get("response"), dict) \
+                    and "data" in item["response"]:
+                base = priced_rooms(item["response"])
+                item["probes"] = {}
+                print("  probing for more room prices:")
+                for label, flags in ROOM_PROBES.items():
+                    variant = json.loads(json.dumps(req))
+                    variant.setdefault("journeyRequest", {}).update(flags)
+                    own_replays.append(canon(variant))
+                    s.page.wait_for_timeout(1500)  # polite gap between requests
+                    res = s.post_raw(variant, _replay_headers(item["request_headers"]))
+                    try:
+                        body = json.loads(res["body"])
+                    except (ValueError, TypeError):
+                        body = {"_text": (res.get("body") or "")[:2000]}
+                    item["probes"][label] = {"status": res["status"], "response": body}
+                    if isinstance(body, dict) and body.get("errors"):
+                        print(f"    {label}: Amtrak error: {body['errors'][0].get('sysMessage')}")
+                        continue
+                    found = priced_rooms(body) if isinstance(body, dict) else {}
+                    more = {t: r for t, r in found.items() if r != base.get(t)}
+                    print(f"    {label}: " + ("no change" if not more else
+                          "; ".join(f"#{t}: {', '.join(r)}" for t, r in more.items())))
             path = out_dir / f"capture-{stamp}.json"
             n = 1
             while path.exists():
@@ -597,6 +662,12 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
                         process(pending.pop(0))
                     except Exception as e:
                         print(f"  could not process a capture: {e}")
+                while other_calls:
+                    call = other_calls.pop(0)
+                    path = out_dir / f"other-{time.strftime('%Y%m%d-%H%M%S')}-{len(list(out_dir.glob('other-*')))+1}.json"
+                    path.write_text(json.dumps(call, indent=2), encoding="utf-8")
+                    print(f"\n  other Amtrak API call: {call['url'].split('amtrak.com')[-1]} "
+                          f"(HTTP {call['status']}) -> {path.name}")
         except KeyboardInterrupt:
             print("\nStopped.")
         except Exception as e:

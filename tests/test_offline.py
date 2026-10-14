@@ -1,9 +1,9 @@
 """Offline tests: parsing, filtering, storage, reparse, report and plot,
 with the network stubbed out. Run:  python -m tests.test_offline
 
-The fixture is SYNTHETIC -- shaped like the publicly documented
-journey-solution-option response, not captured from Amtrak. Once you have a
-real capture from `discover`, drop it in tests/ and add a test against it.
+Two fixtures: a small SYNTHETIC one shaped like the real response (easy to
+vary prices across simulated checks), and a REAL capture of NYP->CHI from
+`discover` in tests/fixtures/ that pins the parser to Amtrak's actual shape.
 """
 
 import io
@@ -19,9 +19,8 @@ from sleeperwatch import amtrak, cli, config, paths, store
 
 
 def accom(cls, fam, price, inv, room=None):
-    product = {"availableInventory": inv}
-    if room:
-        product["accommodationName"] = room
+    # Mirrors the real shape: product name and rbdType live on reservableProduct.
+    product = {"availableInventory": inv, "name": room or f"{cls} Seat", "rbdType": cls}
     return {
         "travelClass": cls, "fareFamily": fam,
         "accommodationFare": {"dollarsAmount": {"total": f"{price:.2f}"}},
@@ -42,9 +41,9 @@ def fixture(date, roomette=480.0, bedroom=1210.0):
     return {"data": {"journeySolutionOption": {"journeyLegs": [{"journeyLegOptions": [
         opt("49", "Lake Shore Limited", "15:40:00", "next-day", [
             accom("Coach", "VLU", 92, 30),
-            accom("Private Rooms", "VLU", roomette, 3, "Roomette"),
-            accom("Private Rooms", "FLX", roomette * 1.2, 3, "Roomette"),
-            accom("Private Rooms", "VLU", bedroom, 1, "Bedroom"),
+            accom("Sleeper", "VLU", roomette, 3, "Roomette"),
+            accom("Sleeper", "FLX", roomette * 1.2, 3, "Roomette"),
+            accom("Sleeper", "VLU", bedroom, 1, "Bedroom"),
         ]),
         opt("63", "Maple Leaf", "07:15:00", "x", [accom("Coach", "VLU", 70, 40)]),
         opt("49", "Lake Shore Limited", "23:00:00", "x", [], cancelled=True),
@@ -151,7 +150,47 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
         config.load(new_wl)  # the shipped example must parse
 
     test_paths()
+    test_real_capture()
     print("all offline tests passed")
+
+
+def test_real_capture():
+    """Parser against a live NYP->CHI response captured 2026-10-14."""
+    import json
+    fx = Path(__file__).parent / "fixtures" / "nyp-chi-2026-11-14.json"
+    cap = json.loads(fx.read_text(encoding="utf-8"))
+    # The site's own request is exactly what build_payload() sends.
+    assert amtrak.compare_payload(cap["request_body"]) == []
+    opts = {o.train_number: o for o in amtrak.parse(cap["response"])}
+    assert set(opts) == {"2205+40", "43+40", "195+40", "49"}, set(opts)
+
+    lsl = opts["49"]
+    assert lsl.train_name == "Lake Shore Limited"
+    room = [f for f in lsl.fares if amtrak.is_sleeper(f)]
+    assert len(room) == 1, room
+    r = room[0]
+    assert (r.travel_class, r.accommodation, r.family_code) == ("Sleeper", "Roomette", "NA")
+    assert (r.price, r.rail, r.accommodation_charge, r.seats_left) == (826.0, 218.0, 608.0, 5)
+    assert [(u.name, u.available) for u in lsl.unpriced_rooms] == [("Bedroom", 3)]
+    assert {f.accommodation for f in lsl.fares if not amtrak.is_sleeper(f)} == {"Coach Seat"}
+
+    # Connecting trip: the room is on the 2nd train; name must come from that leg,
+    # not the Acela First Class seat on the first.
+    acela = [f for f in opts["2205+40"].fares if amtrak.is_sleeper(f)][0]
+    assert acela.accommodation == "Roomette" and acela.seats_left == 18, acela
+
+    # Watch filtering keeps only the Lake Shore sleeper and records the Bedroom count.
+    w = {"name": "t", "from": "NYP", "to": "CHI", "passengers": 1, "trains": ["49"],
+         "only_sleepers": True, "accommodations": [], "fare_families": []}
+    with tempfile.TemporaryDirectory() as tmp:
+        db = store.connect(Path(tmp) / "f.db")
+        run = store.start_run(db)
+        assert store.save_response(db, run, w, "2026-11-14", cap["response"]) == 1
+        row = db.execute("SELECT accommodation, price, rail, room_charge FROM observations").fetchone()
+        assert tuple(row) == ("Roomette", 826.0, 218.0, 608.0), tuple(row)
+        avail = db.execute("SELECT train_number, room, available FROM room_availability").fetchall()
+        assert [tuple(a) for a in avail] == [("49", "Bedroom", 3)], [tuple(a) for a in avail]
+        db.close()
 
 
 def test_paths():
