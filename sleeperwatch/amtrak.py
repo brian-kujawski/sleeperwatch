@@ -219,13 +219,20 @@ async ({endpoint, payload, traceId, timeoutMs, extraHeaders}) => {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
+        // Headers is case-insensitive and set() replaces, so a header passed
+        // in extraHeaders (e.g. 'content-type') overrides the default instead
+        // of being sent twice. Amtrak rejects a doubled Content-Type.
+        // These defaults mirror what Amtrak's own page sends, including its
+        // literal 'csrf-token: undefined'.
+        const headers = new Headers({
+            'content-type': 'application/json',
+            'accept': 'application/json, text/plain, */*',
+            'csrf-token': 'undefined',
+        });
+        for (const [k, v] of Object.entries(extraHeaders || {})) headers.set(k, v);
+        headers.set('x-amtrak-trace-id', traceId);
         const r = await fetch(endpoint, {
-            method: 'POST', signal: ctl.signal,
-            headers: Object.assign({
-                'Content-Type': 'application/json',
-                'Accept': 'application/json, text/plain, */*',
-                'x-amtrak-trace-id': traceId,
-            }, extraHeaders || {}),
+            method: 'POST', signal: ctl.signal, headers,
             body: JSON.stringify(payload),
         });
         return {status: r.status, body: await r.text()};
@@ -567,8 +574,12 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
                 path = out_dir / f"capture-{stamp}-{n}.json"
             path.write_text(json.dumps(item, indent=2), encoding="utf-8")
             print(f"  saved {path}")
-            if isinstance(item["response"], dict) and "data" in item["response"]:
-                summarize_accommodations(item["response"])
+            resp_body = item["response"]
+            if isinstance(resp_body, dict):
+                for err in resp_body.get("errors") or []:
+                    print(f"  Amtrak returned an error: {err.get('sysMessage') or err.get('businessMessage') or err}")
+                if "data" in resp_body:
+                    summarize_accommodations(resp_body)
 
         # Listen on the whole browser, not one tab, in case results open elsewhere.
         s._ctx.on("response", on_response)
