@@ -1,0 +1,20 @@
+# Personal data: routes, fares and browser cookies never belong in git
+watchlist.toml
+data/
+*.db
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
