@@ -33,13 +33,21 @@ python -m playwright install chromium
 Use `pip install -e .` instead if you don't want charts (it skips matplotlib).
 `pipx install ".[plot]"` also works if you'd rather not manage a venv.
 
-**Browser.** By default sleeperwatch drives your installed Google Chrome,
-which gets past Amtrak's bot check more reliably than Playwright's bundled
-Chromium. If Chrome isn't installed it falls back to Chromium automatically.
-You can also pick one with `--channel chrome|msedge|chromium`.
+**Browser.** sleeperwatch uses a browser you already have installed: Google
+Chrome by default, falling back to Chromium, then Edge. It starts that browser
+normally and attaches to it, rather than letting Playwright launch it in
+automation mode, because Amtrak's bot detection returns 403 to
+automation-launched browsers even when a person is clicking. Use
+`--channel msedge` to prefer Edge, or `--browser /path/to/chrome` to pick a
+specific executable. `--channel chromium` forces Playwright's bundled
+Chromium, which gets blocked more often. Installing Google Chrome
+is the most reliable option.
 
 **Linux notes.**
-- If the bundled Chromium complains about missing libraries, run
+- Snap or Flatpak Chromium works. Sandboxed browsers can't write to
+  hidden folders, so their profile lives under `~/snap/...` or `~/.var/app/...`
+  instead, and sleeperwatch says so when it starts.
+- If Playwright's bundled Chromium complains about missing libraries, run
   `python -m playwright install-deps chromium` (uses your package manager,
   needs sudo).
 - A visible browser window needs a desktop session (X11 or Wayland). Over
@@ -107,10 +115,15 @@ blank, find the field holding the room name in the sample entry, add it to
 
 Amtrak has no public fare API. The booking page calls an internal endpoint,
 `/dotcom/journey-solution-option`. The site is protected by Akamai bot
-detection, which blocks plain HTTP clients. So sleeperwatch opens a real
-browser, loads amtrak.com to clear the bot check, and runs each search from
-inside that page. A persistent browser profile keeps the cookies between
-runs.
+detection, which blocks plain HTTP clients and browsers launched in
+automation mode. So sleeperwatch starts your installed browser normally on a
+private profile, attaches to it, loads amtrak.com to clear the bot check,
+and runs each search from inside that page. The profile keeps the cookies
+between runs.
+
+If `discover` or `fetch` reports 403s anyway, first check that a search
+works in your everyday browser on the same network. If it fails there too,
+the block is on your IP or Amtrak is having trouble, not sleeperwatch.
 
 If every search fails, Amtrak probably changed the request. Run
 `discover`, search by hand, and compare the saved `request_body` with

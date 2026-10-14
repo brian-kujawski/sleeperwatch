@@ -240,19 +240,31 @@ async ({endpoint, payload, traceId, timeoutMs}) => {
 class BrowserSession:
     """A browser page on amtrak.com that has cleared the bot check.
 
-    Uses a persistent profile directory so clearance cookies carry over
-    between runs. `channel="chrome"` uses your installed Google Chrome,
-    which bot detection tends to like better than bundled Chromium.
+    Default ("attach") mode: start your installed Chrome/Chromium/Edge as an
+    ordinary process with only a remote-debugging port added, then attach
+    to it. A browser *launched by* Playwright carries automation markers
+    (--enable-automation, a test-build fingerprint) that Akamai rejects
+    outright, even when a human is the one clicking. An ordinary browser
+    that Playwright merely attaches to looks far more like a person.
+
+    Fallback ("playwright") mode, used with --channel chromium or when no
+    installed browser is found: Playwright launches its bundled Chromium.
+    Expect more 403s that way.
+
+    Either way a persistent profile directory keeps cookies between runs.
     """
 
     def __init__(self, profile_dir: Path, headless: bool = False,
-                 channel: str | None = "chrome", log: Callable[[str], None] = print):
+                 channel: str | None = "chrome", executable: str | None = None,
+                 log: Callable[[str], None] = print):
         self.profile_dir = Path(profile_dir)
         self.headless = headless
-        # "chromium" means Playwright's bundled browser (no channel).
-        self.channel = None if channel in (None, "", "chromium") else channel
+        self.channel = channel or "chrome"
+        self.executable = executable
         self.log = log
         self._pw = None
+        self._browser = None
+        self._proc = None
         self._ctx = None
         self.page = None
 
@@ -262,6 +274,7 @@ class BrowserSession:
         except ImportError:
             raise SystemExit("Playwright is not installed. Run:  pip install playwright && "
                              "python -m playwright install chromium")
+        from . import browsers
         from .paths import has_display
 
         if not self.headless and not has_display():
@@ -270,37 +283,71 @@ class BrowserSession:
                 "Either run under a virtual display:   xvfb-run -a sleeperwatch fetch\n"
                 "or try headless mode (blocked more often):  sleeperwatch fetch --headless")
 
-        self.profile_dir.mkdir(parents=True, exist_ok=True)
         self._pw = sync_playwright().start()
-        kwargs = dict(
-            user_data_dir=str(self.profile_dir),
-            headless=self.headless,
-            locale="en-US",
-            viewport={"width": 1366, "height": 900},
-            args=["--disable-blink-features=AutomationControlled"],
-        )
-        try:
-            self._ctx = self._pw.chromium.launch_persistent_context(channel=self.channel, **kwargs)
-        except Exception as e:  # Chrome not installed -> bundled Chromium
-            if self.channel:
-                # Playwright's first message line names the path it looked for.
-                reason = next((ln.strip() for ln in str(e).splitlines() if ln.strip()), e.__class__.__name__)
-                reason = reason.removeprefix("BrowserType.launch_persistent_context:").strip()
-                self.log(f"  could not launch {self.channel!r}: {reason[:200]}")
-                self.log(f"  using bundled Chromium instead. To use {self.channel} (fewer bot blocks), install it "
-                         f"(`python -m playwright install {self.channel}`); "
-                         f"to silence this, pass --channel chromium.")
-                self._ctx = self._pw.chromium.launch_persistent_context(**kwargs)
-            else:
-                raise
-        self._ctx.add_init_script(
-            "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})")
+        exe = None
+        if self.channel != "chromium":
+            exe = self.executable or browsers.find_browser(self.channel)
+            if not exe:
+                self.log(f"  no installed {self.channel} browser found "
+                         f"(looked for: {', '.join(browsers.candidate_names(self.channel))}).")
+                self.log("  falling back to Playwright's bundled Chromium, which Amtrak blocks more often. "
+                         "Install Google Chrome, or point at a browser with --browser PATH.")
+        if exe:
+            self._attach(exe, browsers)
+        else:
+            self._launch_bundled()
         self.page = self._ctx.pages[0] if self._ctx.pages else self._ctx.new_page()
         self.page.set_default_timeout(60_000)
         return self
 
+    def _attach(self, exe: str, browsers) -> None:
+        profile = browsers.profile_dir_for(exe, self.profile_dir)
+        if profile != self.profile_dir:
+            self.log(f"  sandboxed browser detected; using profile at {profile}")
+        self.log(f"  starting {exe}")
+        self._proc, endpoint = browsers.start_with_debug_port(exe, profile, headless=self.headless)
+        try:
+            self._browser = self._pw.chromium.connect_over_cdp(endpoint)
+        except Exception:
+            browsers.stop(self._proc)
+            raise
+        self._ctx = self._browser.contexts[0] if self._browser.contexts else self._browser.new_context()
+
+    def _launch_bundled(self) -> None:
+        self.profile_dir.mkdir(parents=True, exist_ok=True)
+        self._ctx = self._pw.chromium.launch_persistent_context(
+            user_data_dir=str(self.profile_dir),
+            headless=self.headless,
+            locale="en-US",
+            viewport={"width": 1366, "height": 900},
+            ignore_default_args=["--enable-automation"],
+            args=["--disable-blink-features=AutomationControlled"],
+        )
+        self._ctx.add_init_script(
+            "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})")
+
+    def alive(self) -> bool:
+        """False once the user has closed the window (or the browser died)."""
+        if self._proc is not None and self._proc.poll() is not None:
+            return False
+        try:
+            return not self.page.is_closed()
+        except Exception:
+            return False
+
     def __exit__(self, *exc) -> None:
-        for closer in (lambda: self._ctx and self._ctx.close(), lambda: self._pw and self._pw.stop()):
+        from . import browsers
+
+        closers = []
+        if self._browser is not None:
+            closers.append(self._browser.close)       # disconnects from the attached browser
+        elif self._ctx is not None:
+            closers.append(self._ctx.close)
+        if self._proc is not None:
+            closers.append(lambda: browsers.stop(self._proc))
+        if self._pw is not None:
+            closers.append(self._pw.stop)
+        for closer in closers:
             try:
                 closer()
             except Exception:
@@ -383,12 +430,13 @@ class BrowserSession:
         raise BlockedError(f"search failed: {last}")
 
 
-def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome") -> None:
+def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
+             executable: str | None = None) -> None:
     """Open a visible browser, let the user search by hand, and save every
     journey-solution-option request/response so the payload and the sleeper
     response structure can be inspected."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    with BrowserSession(profile_dir, headless=False, channel=channel) as s:
+    with BrowserSession(profile_dir, headless=False, channel=channel, executable=executable) as s:
         count = {"n": 0}
 
         def on_response(resp):
@@ -411,6 +459,8 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome") -
                 "request_body": req_body, "response": body,
             }, indent=2), encoding="utf-8")
             print(f"  saved {path} (HTTP {resp.status})")
+            if resp.status == 403:
+                print(f"  -> blocked by Amtrak's bot detection (session clearance: {s.clearance()}).")
             if isinstance(body, dict):
                 summarize_accommodations(body)
 
@@ -420,8 +470,11 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome") -
         print("\nUse the search form on the Amtrak home page to search a sleeper route")
         print("(one-way, the number of travelers you'd book for).")
         print("Every fare search is captured. Close the browser window when done.\n")
+        # Keep Playwright's event loop turning (so responses get captured)
+        # until the window is closed.
         try:
-            s.page.wait_for_event("close", timeout=0)
+            while s.alive():
+                s.page.wait_for_timeout(500)
         except KeyboardInterrupt:
             print("\nStopped.")
         except Exception:
