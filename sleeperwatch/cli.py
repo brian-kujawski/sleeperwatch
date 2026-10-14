@@ -4,6 +4,7 @@
   paths     show where the watchlist and data live
   fetch     check every watched trip once and record the fares
   discover  open a browser, search by hand, capture the raw request/response
+  trains    catalog of train numbers and names seen in searches
   report    latest / lowest / highest price seen per train, room and fare
   export    dump all observations to CSV
   plot      price-vs-days-before-departure charts (PNG, needs matplotlib)
@@ -114,7 +115,7 @@ def cmd_fetch(args):
 def cmd_discover(args):
     p = _paths(args)
     amtrak.discover(p["profile"], p["captures"], channel=args.channel, executable=args.browser,
-                    reset_profile=args.reset_profile, probe_rooms=args.probe_rooms)
+                    reset_profile=args.reset_profile, probe_rooms=args.probe_rooms, db_path=p["db"])
 
 
 REPORT_SQL = """
@@ -265,6 +266,44 @@ def cmd_reparse(args):
     print(f"Rebuilt {n} observation row(s) from stored responses.")
 
 
+def cmd_trains(args):
+    p = _paths(args)
+    db = args.open_db()
+    if args.scan_captures:
+        import json
+        from datetime import datetime, timezone
+        n_files = n_trains = 0
+        for f in sorted(p["captures"].glob("capture-*.json")):
+            try:
+                body = json.loads(f.read_text(encoding="utf-8")).get("response")
+            except (ValueError, OSError):
+                continue
+            if isinstance(body, dict) and "data" in body:
+                seen = datetime.fromtimestamp(f.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
+                n_trains += store.record_trains(db, body, seen)
+                n_files += 1
+        db.commit()
+        print(f"Scanned {n_files} capture file(s) in {p['captures']} ({n_trains} train sightings).\n")
+    where = "" if args.all else "WHERE has_sleeper = 1"
+    rows = db.execute(f"""SELECT * FROM trains {where}
+                          ORDER BY origin, destination, departs, train_number""").fetchall()
+    if not rows:
+        print("No trains recorded yet. They're added on every `fetch` and `discover` search"
+              + ("" if args.scan_captures else "; `--scan-captures` imports past discover runs") + ".")
+        return
+    header = ("train", "name", "route", "departs", "sleeper", "first seen", "last seen")
+    table = [header] + [(
+        r["train_number"], r["train_name"] or "", f"{r['origin']}->{r['destination']}", r["departs"] or "",
+        "yes" if r["has_sleeper"] else "no", r["first_seen"][:10], r["last_seen"][:10]) for r in rows]
+    widths = [max(len(row[i]) for row in table) for i in range(len(header))]
+    for i, row in enumerate(table):
+        print("  ".join(c.ljust(widths[j]) for j, c in enumerate(row)))
+        if i == 0:
+            print("  ".join("-" * w for w in widths))
+    if not args.all:
+        print("\n(sleeper trains only; --all includes trains without sleepers)")
+
+
 def cmd_init(args):
     dest = args.watchlist
     if dest.exists() and not args.force:
@@ -327,6 +366,12 @@ def main(argv=None):
                    help="after each search, retry it with Amtrak's room-pricing flags to see "
                         "whether Bedrooms etc. come back priced (2 extra requests per search)")
     d.set_defaults(func=cmd_discover)
+
+    tr = sub.add_parser("trains", help="list train numbers and names seen in searches")
+    tr.add_argument("--all", action="store_true", help="include trains without sleepers")
+    tr.add_argument("--scan-captures", action="store_true",
+                    help="also import trains from saved discover captures")
+    tr.set_defaults(func=cmd_trains)
 
     r = sub.add_parser("report", help="latest/low/high per train, room and fare")
     r.add_argument("--watch", nargs="*")

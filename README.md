@@ -131,6 +131,17 @@ as an `other-*.json` file in the captures folder.
 5. `sleeperwatch plot`: one PNG per train and date, showing price against days before departure.
 6. `sleeperwatch export --out fares.csv`: writes everything to CSV for a spreadsheet.
 
+**Which train number is which?** Every search, from `fetch` or `discover`,
+records each direct train it sees in a catalog: number, the name Amtrak
+displays, route and departure time. `sleeperwatch trains` lists the trains
+with sleepers, and `--all` includes the rest. Add `--scan-captures` once to
+import trains from earlier `discover` runs. For example:
+
+```
+train  name                route     departs  sleeper  first seen  last seen
+49     Lake Shore Limited  NYP->CHI  15:40    yes      2026-10-14  2026-10-14
+```
+
 `--watch NAME ...` narrows `fetch`, `report` and `plot` to specific watches.
 
 ## What gets stored (SQLite, `fares.db`)

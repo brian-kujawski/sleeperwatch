@@ -119,6 +119,8 @@ class TrainOption:
     duration_seconds: int
     fares: list[Fare] = field(default_factory=list)
     unpriced_rooms: list[RoomAvailability] = field(default_factory=list)
+    origin: str = ""           # station codes as Amtrak returned them
+    destination: str = ""
     segments: int = 1          # vehicles in the itinerary; >1 means a connection
     all_rail: bool = True      # False if any segment isn't a train (e.g. a Thruway bus)
 
@@ -216,6 +218,8 @@ def parse(raw: dict) -> list[TrainOption]:
             duration_seconds=int(opt.get("elapsedSeconds") or 0),
             fares=fares,
             unpriced_rooms=[r for n, r in unpriced.items() if n not in priced_names],
+            origin=(opt.get("origin") or {}).get("code", ""),
+            destination=(opt.get("destination") or {}).get("code", ""),
             segments=len(travel_legs),
             # Amtrak marks each segment's vehicle type ("TRAIN" in captures);
             # buses use another value. Missing type is assumed to be a train.
@@ -707,7 +711,7 @@ def _path(url: str) -> str:
 
 def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
              executable: str | None = None, reset_profile: bool = False,
-             probe_rooms: bool = False) -> None:
+             probe_rooms: bool = False, db_path: Path | None = None) -> None:
     """Open a visible browser, let the user search by hand, and save what
     Amtrak's fare endpoints were asked and answered.
 
@@ -829,6 +833,13 @@ def discover(profile_dir: Path, out_dir: Path, channel: str | None = "chrome",
             save(item, "capture")
             if not report_errors(body) and isinstance(body, dict) and "data" in body:
                 summarize_accommodations(body)
+                if db_path:
+                    from contextlib import closing
+                    from . import store
+                    with closing(store.connect(db_path)) as db:
+                        n = store.record_trains(db, body)
+                        db.commit()
+                    print(f"  recorded {n} direct train(s) in the train catalog (`sleeperwatch trains`)")
 
         def process_adhoc(item: dict) -> None:
             req = item["request_body"] if isinstance(item["request_body"], dict) else {}

@@ -153,6 +153,7 @@ date_range = {{ start = "{d}", end = "{(datetime.fromisoformat(d) + timedelta(da
     test_real_capture()
     test_room_pricing()
     test_direct_only()
+    test_train_catalog()
     print("all offline tests passed")
 
 
@@ -167,6 +168,34 @@ def test_direct_only():
     # A bus segment disqualifies even a single-segment itinerary.
     bus = json.loads(json.dumps(cap["response"]).replace('"type": "TRAIN"', '"type": "BUS"'))
     assert [o for o in amtrak.parse(bus) if config.keep_train(w, o)] == []
+
+
+def test_train_catalog():
+    """Direct trains seen in searches are catalogued number -> name."""
+    import json, shutil
+    fx = Path(__file__).parent / "fixtures" / "nyp-chi-2026-11-14.json"
+    cap = json.loads(fx.read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        db = store.connect(tmp / "fares.db")
+        assert store.record_trains(db, cap["response"], "2026-10-14T15:00:00+00:00") == 1
+        assert store.record_trains(db, cap["response"], "2026-10-15T15:00:00+00:00") == 1
+        db.commit()
+        rows = [tuple(r) for r in db.execute(
+            "SELECT train_number, train_name, origin, destination, departs, has_sleeper, first_seen, last_seen FROM trains")]
+        assert rows == [("49", "Lake Shore Limited", "NYP", "CHI", "15:40", 1,
+                         "2026-10-14T15:00:00+00:00", "2026-10-15T15:00:00+00:00")], rows
+        db.close()
+
+        # `trains --scan-captures` imports past discover captures
+        (tmp / "data" / "captures").mkdir(parents=True)
+        shutil.copy(fx, tmp / "data" / "captures" / "capture-20261014-110804.json")
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.main(["--data-dir", str(tmp / "data"), "--watchlist", str(tmp / "none.toml"),
+                      "trains", "--scan-captures"])
+        out = buf.getvalue()
+        assert "Lake Shore Limited" in out and "NYP->CHI" in out and "15:40" in out, out
 
 
 def test_room_pricing():

@@ -1,8 +1,9 @@
 """SQLite storage.
 
-Two layers:
+Main tables:
   raw_responses  every response body, gzipped, exactly as Amtrak sent it
   observations   one row per (train, accommodation, fare family) per check
+  trains         catalog of direct trains seen in any search: number -> name
 
 Keeping the raw bodies means that if the parser is improved later (say, to
 pick up a room-type field it was missing) `reparse` can rebuild the whole
@@ -75,6 +76,19 @@ CREATE TABLE IF NOT EXISTS room_availability (
 );
 CREATE INDEX IF NOT EXISTS obs_lookup
     ON observations (watch, travel_date, train_number, accommodation, family_code, observed_at);
+-- Every direct train seen in any search (fetch or discover), so train
+-- numbers in the watchlist can be matched to the names Amtrak displays.
+CREATE TABLE IF NOT EXISTS trains (
+    train_number  TEXT NOT NULL,
+    train_name    TEXT,
+    origin        TEXT NOT NULL,
+    destination   TEXT NOT NULL,
+    departs       TEXT,          -- HH:MM local, as last seen
+    has_sleeper   INTEGER NOT NULL DEFAULT 0,
+    first_seen    TEXT NOT NULL,
+    last_seen     TEXT NOT NULL,
+    PRIMARY KEY (train_number, origin, destination)
+);
 CREATE TABLE IF NOT EXISTS failures (
     id          INTEGER PRIMARY KEY,
     run_id      INTEGER REFERENCES runs(id),
@@ -139,6 +153,31 @@ def _days_out(observed_at: str, depart: str) -> float | None:
         return None
 
 
+def record_trains(db, raw: dict, observed_at: str | None = None) -> int:
+    """Add or refresh the catalog entry for every direct train in a search
+    response. Returns how many trains were recorded."""
+    observed_at = observed_at or now_iso()
+    rows = []
+    for o in parse(raw):
+        if not o.is_direct_train or not o.origin or not o.destination:
+            continue
+        sleeper = any(is_sleeper(f) for f in o.fares) or bool(o.unpriced_rooms)
+        rows.append((o.train_number, o.train_name, o.origin, o.destination,
+                     o.depart[11:16] or None, int(sleeper), observed_at, observed_at))
+    db.executemany(
+        """INSERT INTO trains (train_number, train_name, origin, destination, departs,
+                               has_sleeper, first_seen, last_seen)
+           VALUES (?,?,?,?,?,?,?,?)
+           ON CONFLICT (train_number, origin, destination) DO UPDATE SET
+             train_name  = excluded.train_name,
+             departs     = CASE WHEN excluded.last_seen >= trains.last_seen
+                                THEN excluded.departs ELSE trains.departs END,
+             has_sleeper = MAX(trains.has_sleeper, excluded.has_sleeper),
+             first_seen  = MIN(trains.first_seen, excluded.first_seen),
+             last_seen   = MAX(trains.last_seen, excluded.last_seen)""", rows)
+    return len(rows)
+
+
 def save_response(db, run_id: int, watch: dict, travel_date: str, raw: dict,
                   observed_at: str | None = None) -> int:
     observed_at = observed_at or now_iso()
@@ -150,6 +189,7 @@ def save_response(db, run_id: int, watch: dict, travel_date: str, raw: dict,
          watch["passengers"], gzip.compress(json.dumps(raw).encode())))
     response_id = cur.lastrowid
     n = _insert_observations(db, response_id, observed_at, watch, travel_date, raw)
+    record_trains(db, raw, observed_at)
     db.commit()
     return n
 
@@ -210,5 +250,6 @@ def reparse(db, watches_by_name: dict[str, dict]) -> int:
         watch.setdefault("only_sleepers", True)
         raw = json.loads(gzip.decompress(r["body_gz"]))
         total += _insert_observations(db, r["id"], r["observed_at"], watch, r["travel_date"], raw)
+        record_trains(db, raw, r["observed_at"])
     db.commit()
     return total
